@@ -1,0 +1,132 @@
+# ========================
+# Bot-CryptoV2 Configuration
+# ========================
+
+trading:
+  mode: backtest  # backtest | testnet | live
+  pairs:
+    - BTC/USDT
+    - ETH/USDT
+    - SOL/USDT
+    - BNB/USDT
+    - XRP/USDT
+    - ADA/USDT
+    - DOGE/USDT
+    - AVAX/USDT
+    - DOT/USDT
+    - LINK/USDT
+  timeframes:
+    - 5m
+    - 15m
+    - 1h
+    - 4h
+  default_market: spot  # spot | futures — starting market
+  max_leverage: 3
+
+model:
+  input_window: 90           # number of timesteps to look back
+  retrain_interval_hours: 24 # retrain model every N hours
+  ensemble_weights:
+    cnn_lstm: 0.35
+    transformer: 0.35
+    mlp_head: 0.30
+  # CNN-LSTM branch
+  cnn:
+    filters: [64, 128]
+    kernel_sizes: [3, 5]
+    dropout: 0.3
+  # LSTM branch
+  lstm:
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.3
+    bidirectional: true
+    attention: true
+  # Transformer branch
+  transformer:
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    dim_feedforward: 256
+    dropout: 0.1
+  # Training
+  training:
+    batch_size: 32                # reduced from 64 to lower RAM usage
+    epochs: 100
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    scheduler: cosine  # cosine | step | plateau
+    early_stopping_patience: 15
+    validation_split: 0.15
+    test_split: 0.1
+    max_ram_mb: 4096              # 4 GB soft cap — warns + forces GC when exceeded (0 = unlimited)
+    gc_every_n_epochs: 1          # run gc.collect() every N epochs to release memory
+
+signal:
+  confidence_threshold: 0.50   # lowered from 0.70 — model avg ~0.63 after 10 epochs; raise after retraining
+  magnitude_threshold: 0.002   # 0.2% minimum expected move (was 0.005)
+  cooldown_minutes: 15         # min time between signals per pair (was 30)
+
+risk:
+  max_position_pct: 0.08       # max 8% of portfolio per trade (was 5%)
+  max_concurrent_positions: 5  # allow more concurrent positions (was 3)
+  stop_loss_pct: 0.015         # 1.5% trailing stop-loss (was 2%)
+  take_profit_levels: [0.02, 0.04, 0.07]
+  take_profit_weights: [0.4, 0.35, 0.25]  # % of position to close at each level
+  max_daily_drawdown_pct: 0.15  # 15% daily drawdown limit (was 5% — too aggressive)
+  max_weekly_drawdown_pct: 0.20  # 20% weekly (was 10%)
+
+exchange:
+  testnet: true
+  rate_limit_per_minute: 1200
+  order_type: limit  # limit | market
+  slippage_pct: 0.001  # 0.1% expected slippage
+
+scraping:
+  ohlcv:
+    history_days: 90       # initial history to fetch
+    update_interval_sec: 300  # 5 minutes
+  orderbook:
+    depth: 20              # levels
+    update_interval_sec: 60
+  sentiment:
+    sources:
+      - cryptopanic
+      - reddit
+    update_interval_sec: 900  # 15 minutes
+  onchain:
+    sources:
+      - whale_alert
+    update_interval_sec: 1800  # 30 minutes
+
+storage:
+  data_dir: data
+  raw_dir: data/raw
+  features_dir: data/features
+  models_dir: models/saved
+
+backtest:
+  start_date: "2026-01-01"
+  end_date: "2026-12-31"
+  initial_capital: 10000.0
+  commission_spot: 0.001       # 0.1%
+  commission_futures: 0.0002   # 0.02%
+  slippage: 0.0005             # 0.05%
+  walk_forward:
+    train_months: 6
+    test_months: 1
+    step_months: 1
+
+monitoring:
+  dashboard:
+    enabled: true
+    port: 8501
+  telegram:
+    enabled: false
+    bot_token: ""
+    chat_id: ""
+  logging:
+    level: INFO
+    file: logs/bot.log
+    max_bytes: 10485760  # 10MB
+    backup_count: 5

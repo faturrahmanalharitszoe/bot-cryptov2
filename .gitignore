@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Data (large files — don't commit)
+data/raw/
+data/features/
+*.parquet
+*.db
+*.sqlite
+
+# Model checkpoints
+models/saved/*.pth
+models/saved/*.pt
+models/saved/*.onnx
+models/saved/*.pkl
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Plans (optional — remove this line if you want to track plans)
+# plans/
