@@ -9,7 +9,7 @@ yfinance>=0.2.40          # Fallback OHLCV source when Binance is geo-blocked
 # Data processing
 pandas>=2.0.0
 numpy>=1.24.0
-pyarrow>=14.0.0          # Parquet support
+pyarrow==14.0.2          # Parquet support (Pinned to avoid compilation on py3.9)
 
 # Technical analysis
 ta>=0.11.0
