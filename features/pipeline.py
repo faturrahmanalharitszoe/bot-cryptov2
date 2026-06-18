@@ -254,6 +254,11 @@ class FeaturePipeline:
         magnitude = magnitude.iloc[:-prediction_horizon]
         confidence = confidence.iloc[:-prediction_horizon]
 
+        # Drop unscaled raw features so they don't cause exploding gradients in the neural network.
+        # Any feature that has a '_norm' equivalent should be dropped.
+        cols_to_drop = [c.replace("_norm", "") for c in features.columns if c.endswith("_norm")]
+        features = features.drop(columns=cols_to_drop, errors="ignore")
+
         # Log class distribution so imbalance is always visible
         n_total = len(direction)
         n_long    = int((direction == 0).sum())
