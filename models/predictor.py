@@ -299,7 +299,13 @@ class Predictor:
             )
 
         # Take last N rows as window
-        window = df.iloc[-self.input_window:]
+        window = df.iloc[-self.input_window:].copy()
+
+        # Drop unscaled raw features so they don't cause exploding gradients or shape mismatches
+        # Any feature that has a '_norm' equivalent should be dropped, matching the training pipeline.
+        cols_to_drop = [c.replace("_norm", "") for c in window.columns if c.endswith("_norm")]
+        window = window.drop(columns=cols_to_drop, errors="ignore")
+
         # Exclude raw OHLCV + timestamp columns to match training pipeline
         skip_cols = {"timestamp", "open", "high", "low", "close", "volume"}
         num_cols = [
