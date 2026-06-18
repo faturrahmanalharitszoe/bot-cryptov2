@@ -78,13 +78,15 @@ class EnsembleHead(nn.Module):
 
         magnitude = self.magnitude_head(shared)
 
-        confidence = torch.sigmoid(self.confidence_head(shared))
+        confidence_logits = self.confidence_head(shared)
+        confidence = torch.sigmoid(confidence_logits)
 
         return {
             "direction": direction,
             "direction_logits": direction_logits,
             "magnitude": magnitude,
             "confidence": confidence,
+            "confidence_logits": confidence_logits,
         }
 
 

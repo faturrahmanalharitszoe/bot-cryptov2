@@ -243,7 +243,7 @@ class MultiTaskLoss(nn.Module):
             )
 
         self.magnitude_loss = nn.MSELoss()
-        self.confidence_loss = nn.BCELoss()
+        self.confidence_loss = nn.BCEWithLogitsLoss()
 
     def forward(
         self,
@@ -274,7 +274,7 @@ class MultiTaskLoss(nn.Module):
 
         # Confidence loss
         c_loss = self.confidence_loss(
-            predictions["confidence"],
+            predictions["confidence_logits"],
             targets["confidence"],
         )
 

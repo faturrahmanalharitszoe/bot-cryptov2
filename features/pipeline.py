@@ -232,6 +232,7 @@ class FeaturePipeline:
 
         # Magnitude (regression target): absolute percentage move
         magnitude = future_return.abs().fillna(0.0)
+        magnitude = magnitude.replace([np.inf, -np.inf], 0.0)
 
         # Confidence proxy: based on volatility and trend clarity
         # Higher when trend is clear and volatility is manageable
@@ -245,7 +246,7 @@ class FeaturePipeline:
         else:
             vol_factor = pd.Series(0.5, index=features.index)
 
-        confidence = (trend_clarity * 0.5 + vol_factor * 0.5).clip(0, 1)
+        confidence = (trend_clarity * 0.5 + vol_factor * 0.5).clip(0, 1).fillna(0.5)
 
         # Remove last prediction_horizon rows (no future data for labels)
         features = features.iloc[:-prediction_horizon]
