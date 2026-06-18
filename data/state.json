@@ -1,12 +1,12 @@
 {
   "tracker": {
-    "total_trades": 34,
+    "total_trades": 42,
     "total_realized_pnl": 0.0,
     "total_fees": 0.0,
     "win_rate": 0.0,
     "avg_pnl": 0.0,
     "avg_pnl_pct": 0.0,
-    "avg_duration_hours": 9.911898499220805e-05,
+    "avg_duration_hours": 0.00014194601269626112,
     "best_trade_pnl": 0.0,
     "worst_trade_pnl": 0.0,
     "profit_factor": Infinity,
@@ -23,5 +23,5 @@
     "open_positions": 0,
     "max_positions": 8
   },
-  "timestamp": "2026-06-18T13:54:31.968568"
+  "timestamp": "2026-06-18T14:09:31.971257"
 }
