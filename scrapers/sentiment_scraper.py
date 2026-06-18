@@ -11,6 +11,8 @@ Each entry is scored for sentiment using a simple keyword-based approach
 """
 
 import re
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import requests
 import feedparser
 from datetime import datetime, timedelta
@@ -250,7 +252,7 @@ class SentimentScraper(BaseScraper):
             }
             
             try:
-                response = requests.get(url, headers=headers, timeout=15)
+                response = requests.get(url, headers=headers, timeout=15, verify=False)
                 response.raise_for_status()
                 data = response.json()
             except Exception as e:

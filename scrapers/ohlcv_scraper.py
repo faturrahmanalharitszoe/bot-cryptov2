@@ -67,12 +67,11 @@ _YF_MAX_DAYS = {
     "1wk": 3650,
 }
 
-# Some tickers have known aliases on Yahoo Finance.
 # Try the alias if the primary returns empty.
 _YF_TICKER_ALIASES: dict[str, list[str]] = {
-    "SOL-USD":  ["SOL1-USD", "SOL-USD"],   # Solana sometimes listed as SOL1-USD
-    "DOT-USD":  ["DOT1-USD", "DOT-USD"],   # Polkadot occasionally
-    "BTC-USD":  ["BTC-USD"],               # stable, listed for completeness
+    "SOL-USD":  ["SOL-USD"],
+    "DOT-USD":  ["DOT-USD"],
+    "BTC-USD":  ["BTC-USD"],
     "ETH-USD":  ["ETH-USD"],
 }
 

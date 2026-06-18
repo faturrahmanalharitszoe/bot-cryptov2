@@ -122,6 +122,10 @@ class FeaturePipeline:
                 if ob_data is not None and not ob_data.empty:
                     ob_features = self.orderbook.compute(ob_data)
                     if not ob_features.empty:
+                        # Ensure both timestamps have same precision (ns)
+                        merged["timestamp"] = pd.to_datetime(merged["timestamp"]).astype("datetime64[ns]")
+                        ob_features["timestamp"] = pd.to_datetime(ob_features["timestamp"]).astype("datetime64[ns]")
+                        
                         # Merge with asof for time alignment
                         merged = pd.merge_asof(
                             merged.sort_values("timestamp"),

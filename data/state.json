@@ -1,0 +1,27 @@
+{
+  "tracker": {
+    "total_trades": 34,
+    "total_realized_pnl": 0.0,
+    "total_fees": 0.0,
+    "win_rate": 0.0,
+    "avg_pnl": 0.0,
+    "avg_pnl_pct": 0.0,
+    "avg_duration_hours": 9.911898499220805e-05,
+    "best_trade_pnl": 0.0,
+    "worst_trade_pnl": 0.0,
+    "profit_factor": Infinity,
+    "open_positions": 0
+  },
+  "risk": {
+    "portfolio_value": 10000.0,
+    "peak_value": 10000.0,
+    "daily_drawdown": 0.0,
+    "weekly_drawdown": 0.0,
+    "total_drawdown": 0.0,
+    "trading_halted": false,
+    "halt_reason": "",
+    "open_positions": 0,
+    "max_positions": 8
+  },
+  "timestamp": "2026-06-18T13:54:31.968568"
+}

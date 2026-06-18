@@ -38,15 +38,52 @@ def load_config():
         return None
 
 
-def load_trade_history(config) -> list[dict]:
+def load_trade_history(config) -> pd.DataFrame:
     """Load trade history from SQLite."""
     try:
         from storage.sqlite_store import SQLiteStore
-        store = SQLiteStore(config.storage.get("data_dir", "data"))
-        # Return recent trades
-        return store.get_recent_trades(limit=100) if hasattr(store, "get_recent_trades") else []
+        store = SQLiteStore()
+        return store.get_trade_history(limit=100)
     except Exception:
-        return []
+        return pd.DataFrame()
+
+def get_model_last_trained(config) -> str:
+    """Get the last modification time of the best model."""
+    try:
+        model_path = config.get_model_path("ensemble_best.pt")
+        if model_path.exists():
+            mtime = model_path.stat().st_mtime
+            return datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        pass
+    return "N/A"
+
+def load_open_trades(config) -> pd.DataFrame:
+    """Load open trades from SQLite."""
+    try:
+        from storage.sqlite_store import SQLiteStore
+        store = SQLiteStore()
+        return store.get_open_trades()
+    except Exception:
+        return pd.DataFrame()
+
+def load_signals(config) -> pd.DataFrame:
+    """Load signals from SQLite."""
+    try:
+        from storage.sqlite_store import SQLiteStore
+        store = SQLiteStore()
+        return store.get_signals(limit=20)
+    except Exception:
+        return pd.DataFrame()
+
+def load_state(config) -> dict:
+    """Load orchestrator state."""
+    try:
+        state_file = Path(config.storage.get("data_dir", "data")) / "state.json"
+        with open(state_file, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 
 def load_ohlcv_data(config, symbol: str, timeframe: str = "1h") -> pd.DataFrame | None:
@@ -62,205 +99,175 @@ def load_ohlcv_data(config, symbol: str, timeframe: str = "1h") -> pd.DataFrame 
 def render_dashboard():
     """Main dashboard renderer."""
     st.set_page_config(
-        page_title="Bot-CryptoV2 Dashboard",
-        page_icon="🤖",
+        page_title="Bloomberg Crypto Terminal",
+        page_icon="📟",
         layout="wide",
+        initial_sidebar_state="collapsed",
     )
 
-    st.title("🤖 Bot-CryptoV2 — DL Swing Trading Dashboard")
-    st.markdown("---")
+    # -------------------------------------------------------------------
+    # Custom Bloomberg-style CSS
+    # -------------------------------------------------------------------
+    st.markdown(
+        """
+        <style>
+        /* Base background and text */
+        .stApp {
+            background-color: #050505 !important;
+            color: #ffb000 !important;
+            font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace !important;
+        }
+        
+        /* Headers */
+        h1, h2, h3, h4, h5, h6 {
+            color: #00e5ff !important;
+            font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace !important;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        /* Metric styling */
+        [data-testid="stMetricValue"] {
+            color: #00e5ff !important;
+            font-size: 1.8rem !important;
+            font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+        }
+        [data-testid="stMetricLabel"] {
+            color: #ffb000 !important;
+            text-transform: uppercase;
+            font-size: 0.9rem !important;
+        }
+        [data-testid="stMetricDelta"] {
+            font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+        }
+        
+        /* Containers / Borders */
+        [data-testid="stVerticalBlock"] > div > div {
+            border: 1px solid #1a1a1a;
+            padding: 5px;
+            background-color: #0a0a0a;
+        }
+        
+        /* Dataframes */
+        [data-testid="stDataFrame"] {
+            font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+            font-size: 0.85rem !important;
+        }
+        
+        /* Hide sidebar completely if possible, or style it */
+        section[data-testid="stSidebar"] {
+            background-color: #000000 !important;
+            border-right: 1px solid #333 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     config = load_config()
+    state = load_state(config) if config else {}
+    risk_stats = state.get("risk", {})
+    tracker_stats = state.get("tracker", {})
 
-    # Sidebar
-    with st.sidebar:
-        st.header("⚙️ Settings")
-        if config:
-            pairs = config.trading.get("pairs", ["BTC/USDT"])
-            mode = config.trading.get("mode", "backtest")
-            st.write(f"**Mode:** {mode}")
-            st.write(f"**Pairs:** {len(pairs)}")
-        else:
-            st.warning("Config not loaded")
-            pairs = ["BTC/USDT"]
+    st.markdown("### 📟 BOT-CRYPTOV2 TERMINAL (DL SWING TRADING)")
 
-        selected_pair = st.selectbox("Select Pair", pairs)
-        timeframe = st.selectbox("Timeframe", ["5m", "15m", "1h", "4h"], index=2)
+    # -------------------------------------------------------------------
+    # Ticker Tape Row (Top Metrics)
+    # -------------------------------------------------------------------
+    m1, m2, m3, m4, m5 = st.columns(5)
+    with m1:
+        st.metric("PORTFOLIO", f"${risk_stats.get('portfolio_value', 10000.0):,.2f}")
+    with m2:
+        st.metric("OPEN RISK", f"${risk_stats.get('open_risk', 0.0):.2f}")
+    with m3:
+        dd = risk_stats.get("total_drawdown", 0.0) * 100
+        st.metric("DRAWDOWN", f"{dd:.2f}%", delta=f"{dd:.2f}%", delta_color="inverse")
+    with m4:
+        st.metric("OPEN POS", str(risk_stats.get('open_positions', 0)))
+    with m5:
+        st.metric("WIN RATE", f"{tracker_stats.get('win_rate', 0.0) * 100:.1f}%")
 
-        st.markdown("---")
-        st.header("📡 Status")
-        st.write(f"**Last Update:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # Main content — 3 columns
-    col1, col2, col3 = st.columns(3)
+    # -------------------------------------------------------------------
+    # Main Layout: 70% Chart / 30% Panel
+    # -------------------------------------------------------------------
+    col_chart, col_panel = st.columns([7, 3])
 
-    with col1:
-        st.metric("Portfolio Value", "$10,000.00", "+2.3%")
-    with col2:
-        st.metric("Open Positions", "2", "0")
-    with col3:
-        st.metric("Win Rate", "62.5%", "+1.2%")
-
-    st.markdown("---")
-
-    # Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📈 Chart", "📊 Positions", "📋 Trades", "⚠️ Risk", "🔮 Predictions"
-    ])
-
-    # Tab 1: Price Chart
-    with tab1:
-        st.subheader(f"{selected_pair} Price Chart ({timeframe})")
+    with col_chart:
+        st.markdown("#### PRICE ACTION")
+        pairs = config.trading.get("pairs", ["BTC/USDT"]) if config else ["BTC/USDT"]
+        
+        # Mini selector
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            selected_pair = st.selectbox("SYMBOL", pairs, label_visibility="collapsed")
+        with c2:
+            timeframe = st.selectbox("TIMEFRAME", ["5m", "15m", "1h", "4h"], index=2, label_visibility="collapsed")
 
         if config:
             df = load_ohlcv_data(config, selected_pair, timeframe)
             if df is not None and not df.empty:
-                # Show last 200 candles
-                chart_df = df.tail(200).copy()
-
-                # Candlestick-style chart using streamlit
-                st.line_chart(chart_df[["close"]])
-
-                # Volume chart
+                chart_df = df.tail(150).copy()
+                st.line_chart(chart_df[["close"]], height=400, use_container_width=True)
+                
+                # Volume
                 if "volume" in chart_df.columns:
-                    st.bar_chart(chart_df["volume"])
-
-                # Stats
-                latest = chart_df.iloc[-1]
-                c1, c2, c3, c4 = st.columns(4)
-                with c1:
-                    st.metric("Last Price", f"${latest.get('close', 0):,.2f}")
-                with c2:
-                    chg = ((latest.get("close", 0) - chart_df.iloc[-2].get("close", 1)) /
-                           chart_df.iloc[-2].get("close", 1) * 100) if len(chart_df) > 1 else 0
-                    st.metric("24h Change", f"{chg:+.2f}%")
-                with c3:
-                    st.metric("High", f"${chart_df['high'].tail(24).max():,.2f}")
-                with c4:
-                    st.metric("Low", f"${chart_df['low'].tail(24).min():,.2f}")
+                    st.bar_chart(chart_df["volume"], height=100)
             else:
-                st.info("No OHLCV data available. Run `python main.py --mode scrape` first.")
+                st.info(f"NO DATA FOR {selected_pair}")
 
-    # Tab 2: Open Positions
-    with tab2:
-        st.subheader("Open Positions")
+    with col_panel:
+        st.markdown("#### LATEST SIGNALS")
+        signals_df = load_signals(config) if config else pd.DataFrame()
+        if not signals_df.empty:
+            # Format dataframe to look dense
+            display_sig = signals_df[["symbol", "direction", "confidence"]].copy()
+            st.dataframe(
+                display_sig.style.map(
+                    lambda x: "color: #00ff00" if x == "BUY" else ("color: #ff0044" if x == "SHORT" else "color: #555"),
+                    subset=["direction"],
+                ),
+                use_container_width=True,
+                height=250,
+                hide_index=True
+            )
+        else:
+            st.caption("WAITING FOR SIGNALS...")
 
-        positions_data = [
-            {"Symbol": "BTC/USDT", "Side": "Long", "Market": "Futures",
-             "Entry": "$65,000", "Size": "0.0015", "Leverage": "2x",
-             "PnL": "+$12.50", "PnL%": "+1.28%"},
-            {"Symbol": "ETH/USDT", "Side": "Long", "Market": "Spot",
-             "Entry": "$3,200", "Size": "0.5", "Leverage": "1x",
-             "PnL": "+$8.00", "PnL%": "+0.50%"},
-        ]
+        st.markdown("#### OPEN POSITIONS")
+        open_df = load_open_trades(config) if config else pd.DataFrame()
+        if not open_df.empty:
+            display_open = open_df[["symbol", "side", "pnl"]].copy()
+            st.dataframe(
+                display_open.style.map(
+                    lambda x: "color: #00ff00" if float(x) > 0 else ("color: #ff0044" if float(x) < 0 else "color: #555"),
+                    subset=["pnl"],
+                ),
+                use_container_width=True,
+                height=200,
+                hide_index=True
+            )
+        else:
+            st.caption("NO OPEN POSITIONS.")
 
-        st.dataframe(pd.DataFrame(positions_data), use_container_width=True)
-
-    # Tab 3: Trade History
-    with tab3:
-        st.subheader("Recent Trades")
-
-        trades_data = [
-            {"Time": "2025-05-30 14:30", "Symbol": "BTC/USDT", "Side": "Long",
-             "Entry": "$64,500", "Exit": "$65,200", "PnL": "+$10.50",
-             "Duration": "4.2h", "Reason": "take_profit"},
-            {"Time": "2025-05-29 09:15", "Symbol": "SOL/USDT", "Side": "Short",
-             "Entry": "$180.50", "Exit": "$178.20", "PnL": "+$11.50",
-             "Duration": "2.1h", "Reason": "signal"},
-            {"Time": "2025-05-28 22:00", "Symbol": "ETH/USDT", "Side": "Long",
-             "Entry": "$3,250", "Exit": "$3,185", "PnL": "-$6.50",
-             "Duration": "1.5h", "Reason": "stop_loss"},
-        ]
-
-        st.dataframe(pd.DataFrame(trades_data), use_container_width=True)
-
-        # Trade summary
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.metric("Total Trades", "3")
-        with c2:
-            st.metric("Profit Factor", "3.38")
-        with c3:
-            st.metric("Avg Duration", "2.6h")
-
-    # Tab 4: Risk Metrics
-    with tab4:
-        st.subheader("Risk Management")
-
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.metric("Daily Drawdown", "-1.2%", delta_color="inverse")
-        with c2:
-            st.metric("Weekly Drawdown", "-2.8%", delta_color="inverse")
-        with c3:
-            st.metric("Max Drawdown", "-4.5%", delta_color="inverse")
-        with c4:
-            st.metric("Sharpe Ratio", "1.82")
-
-        st.markdown("---")
-
-        # Drawdown limits
-        st.subheader("Drawdown Limits")
-        daily_dd = 1.2
-        weekly_dd = 2.8
-
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.write("**Daily Drawdown Limit: 5%**")
-            st.progress(min(daily_dd / 5.0, 1.0))
-            st.write(f"Current: {daily_dd}% / 5%")
-
-        with col_b:
-            st.write("**Weekly Drawdown Limit: 10%**")
-            st.progress(min(weekly_dd / 10.0, 1.0))
-            st.write(f"Current: {weekly_dd}% / 10%")
-
-        # Position sizing
-        st.markdown("---")
-        st.subheader("Position Sizing Rules")
-        rules = pd.DataFrame({
-            "Rule": ["Max Position Size", "Max Concurrent", "Stop-Loss", "Max Leverage"],
-            "Value": ["5% of portfolio", "3 positions", "2% trailing", "3x"],
-            "Status": ["✅ OK", "✅ OK", "✅ OK", "✅ OK"],
-        })
-        st.dataframe(rules, use_container_width=True)
-
-    # Tab 5: Model Predictions
-    with tab5:
-        st.subheader("Latest Model Predictions")
-
-        predictions = pd.DataFrame({
-            "Symbol": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"],
-            "Direction": ["Long", "Long", "Short", "Neutral", "Long"],
-            "Confidence": [0.82, 0.75, 0.68, 0.52, 0.71],
-            "Magnitude": [0.015, 0.012, 0.008, 0.003, 0.010],
-            "Action": ["BUY", "BUY", "SHORT", "HOLD", "BUY"],
-            "Market": ["Spot", "Spot", "Futures", "-", "Spot"],
-        })
-
+    # -------------------------------------------------------------------
+    # Trade History (Bottom)
+    # -------------------------------------------------------------------
+    st.markdown("#### TRADE LOG")
+    trades_df = load_trade_history(config) if config else pd.DataFrame()
+    if not trades_df.empty:
         st.dataframe(
-            predictions.style.applymap(
-                lambda x: "color: green" if x == "BUY" else ("color: red" if x == "SHORT" else "color: gray"),
-                subset=["Action"],
-            ),
+            trades_df[["symbol", "side", "market", "price", "pnl", "close_reason", "opened_at", "closed_at"]], 
             use_container_width=True,
+            height=250,
+            hide_index=True
         )
+    else:
+        st.caption("NO RECENT TRADES.")
 
-        # Model info
-        st.markdown("---")
-        st.subheader("Model Info")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.metric("Architecture", "CNN-LSTM + Transformer")
-        with c2:
-            st.metric("Input Window", "90 bars")
-        with c3:
-            st.metric("Last Trained", "2025-05-30 00:00")
-
-    # Footer
-    st.markdown("---")
-    st.caption("Bot-CryptoV2 — Deep Learning Swing Trading Bot | CNN-LSTM + Transformer Ensemble")
-
+    st.caption(f"LAST TRAINED: {get_model_last_trained(config) if config else 'N/A'}")
 
 if __name__ == "__main__":
     render_dashboard()

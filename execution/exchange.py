@@ -103,14 +103,23 @@ class ExchangeClient:
 
         # Spot
         self.spot_exchange = ccxt.binance(common_config)
-        if self.testnet:
-            self.spot_exchange.set_sandbox_mode(True)
 
         # Futures
         futures_config = {**common_config, "options": {"defaultType": "future"}}
         self.futures_exchange = ccxt.binance(futures_config)
+        
         if self.testnet:
-            self.futures_exchange.set_sandbox_mode(True)
+            # Spot: testnet.binance.vision is still active for Spot
+            self.spot_exchange.set_sandbox_mode(True)
+            
+            # Futures: Use demo.binance.com (Mock Trading) instead of deprecated testnet
+            try:
+                self.futures_exchange.set_sandbox_mode(True)
+            except Exception:
+                pass
+            
+            demo_urls_futures = self.futures_exchange.urls.get("demo", {})
+            self.futures_exchange.urls["api"] = self.futures_exchange.deep_extend(self.futures_exchange.urls["api"], demo_urls_futures)
 
         self._connected = True
         logger.info(

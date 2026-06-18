@@ -199,6 +199,17 @@ class LiveOrchestrator:
                     features_df=features_df,
                 )
 
+                try:
+                    self.sqlite_store.save_signal(
+                        symbol=signal.symbol,
+                        direction=signal.action.value,
+                        confidence=prediction.confidence,
+                        magnitude=prediction.magnitude,
+                        market_type=signal.market.value,
+                    )
+                except Exception as e:
+                    logger.warning("Failed to save signal to DB: %s", e)
+
                 if signal.action == SignalAction.HOLD:
                     continue
 
@@ -214,26 +225,52 @@ class LiveOrchestrator:
                 if signal.is_entry:
                     position = self.risk_manager.create_position(signal, current_price)
                     if position:
-                        if signal.market.value == "spot":
-                            result = self.exchange.create_spot_order(
-                                symbol=signal.symbol,
-                                side=signal.side,
-                                order_type="market",
-                                amount=position.size,
-                            )
-                        else:
-                            result = self.exchange.create_futures_order(
-                                symbol=signal.symbol,
-                                side=signal.side,
-                                order_type="market",
-                                amount=position.size,
-                                leverage=signal.leverage,
-                            )
-                        logger.info("Order result: %s", result)
+                        try:
+                            if signal.market.value == "spot":
+                                result = self.exchange.create_spot_order(
+                                    symbol=signal.symbol,
+                                    side=signal.side,
+                                    order_type="market",
+                                    amount=position.size,
+                                )
+                            else:
+                                result = self.exchange.create_futures_order(
+                                    symbol=signal.symbol,
+                                    side=signal.side,
+                                    order_type="market",
+                                    amount=position.size,
+                                    leverage=signal.leverage,
+                                )
+                            logger.info("Order result: %s", result)
+                            
+                            try:
+                                db_id = self.sqlite_store.save_trade(
+                                    symbol=position.symbol,
+                                    side=position.side,
+                                    market=position.market,
+                                    order_type="market",
+                                    price=position.entry_price,
+                                    quantity=position.size,
+                                    total_value=position.notional_value,
+                                    signal_confidence=prediction.confidence,
+                                    signal_direction=signal.action.value,
+                                    signal_magnitude=prediction.magnitude,
+                                    status="open"
+                                )
+                                position.db_id = db_id
+                            except Exception as e:
+                                logger.warning("Failed to save trade to DB: %s", e)
+                                
+                        except Exception as e:
+                            logger.error("Failed to execute order on exchange for %s: %s", signal.symbol, e)
+                            # Rollback the in-memory tracker since order failed
+                            self.tracker.close_position(signal.symbol, current_price, close_reason="execution_failed")
+                            continue
 
                 elif signal.is_exit:
                     pos = self.tracker.get_position(symbol)
                     if pos:
+                        db_id = pos.db_id
                         result = self.exchange.close_position(
                             symbol=symbol,
                             market=pos.market,
@@ -245,6 +282,16 @@ class LiveOrchestrator:
                             self.risk_manager.update_portfolio_value(
                                 self.risk_manager.current_portfolio_value + trade.pnl,
                             )
+                            if db_id != -1:
+                                try:
+                                    self.sqlite_store.close_trade(
+                                        trade_id=db_id,
+                                        close_price=trade.exit_price,
+                                        pnl=trade.pnl,
+                                        close_reason="signal",
+                                    )
+                                except Exception as e:
+                                    logger.warning("Failed to close trade in DB: %s", e)
                         logger.info("Position closed: %s", result)
 
             except Exception as e:
@@ -269,6 +316,7 @@ class LiveOrchestrator:
                         # Check stop-loss
                         if pos.should_stop_loss(price):
                             logger.warning("STOP-LOSS triggered for %s at %.4f", pos.symbol, price)
+                            db_id = pos.db_id
                             result = self.exchange.close_position(
                                 symbol=pos.symbol,
                                 market=pos.market,
@@ -280,6 +328,16 @@ class LiveOrchestrator:
                                 self.risk_manager.update_portfolio_value(
                                     self.risk_manager.current_portfolio_value + trade.pnl,
                                 )
+                                if db_id != -1:
+                                    try:
+                                        self.sqlite_store.close_trade(
+                                            trade_id=db_id,
+                                            close_price=trade.exit_price,
+                                            pnl=trade.pnl,
+                                            close_reason="stop_loss",
+                                        )
+                                    except Exception as e:
+                                        logger.warning("Failed to close trade in DB: %s", e)
                             logger.info("Stop-loss executed: %s", result)
 
                         # Check take-profits
@@ -289,10 +347,28 @@ class LiveOrchestrator:
                             close_size = pos.initial_size * close_fraction
                             logger.info("TAKE-PROFIT %d for %s: closing %.2f%%",
                                         tp_idx, pos.symbol, close_fraction * 100)
+                            db_id = pos.db_id
                             result = self.exchange.close_position(
                                 symbol=pos.symbol,
                                 market=pos.market,
                             )
+                            trade = self.tracker.close_position(
+                                pos.symbol, price, close_reason="take_profit",
+                            )
+                            if trade:
+                                self.risk_manager.update_portfolio_value(
+                                    self.risk_manager.current_portfolio_value + trade.pnl,
+                                )
+                                if db_id != -1:
+                                    try:
+                                        self.sqlite_store.close_trade(
+                                            trade_id=db_id,
+                                            close_price=trade.exit_price,
+                                            pnl=trade.pnl,
+                                            close_reason="take_profit",
+                                        )
+                                    except Exception as e:
+                                        logger.warning("Failed to close trade in DB: %s", e)
                             logger.info("TP execution: %s", result)
 
             except Exception as e:
@@ -300,6 +376,8 @@ class LiveOrchestrator:
 
     def _job_save_state(self) -> None:
         """Periodically save trading state."""
+        import json
+        from pathlib import Path
         stats = self.tracker.get_stats()
         risk_stats = self.risk_manager.get_stats()
         logger.info(
@@ -310,6 +388,19 @@ class LiveOrchestrator:
             stats.get("win_rate", 0) * 100,
             risk_stats["total_drawdown"] * 100,
         )
+        
+        try:
+            state_data = {
+                "tracker": stats,
+                "risk": risk_stats,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            state_file = Path(self.config.storage.get("data_dir", "data")) / "state.json"
+            state_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(state_file, "w") as f:
+                json.dump(state_data, f, indent=2)
+        except Exception as e:
+            logger.warning("Failed to save state.json: %s", e)
 
     # -------------------------------------------------------------------
     # Start / Stop
@@ -318,6 +409,12 @@ class LiveOrchestrator:
     def start(self) -> None:
         """Start the orchestrator with scheduled jobs."""
         self._running = True
+
+        try:
+            self.exchange.connect()
+        except Exception as e:
+            logger.error("Failed to connect to exchange: %s", e)
+            return
 
         # Update intervals from config
         ohlcv_interval = self.config.scraping.get("ohlcv", {}).get("update_interval_sec", 300)
@@ -371,8 +468,9 @@ class LiveOrchestrator:
         self.scheduler.start()
         logger.info("Orchestrator started in %s mode with %d scheduled jobs", self.mode, len(self.scheduler.get_jobs()))
 
-        # Run initial scrape immediately
+        # Run initial scrape and state save immediately
         self._job_scrape_ohlcv()
+        self._job_save_state()
 
         # Block until interrupted
         try:
@@ -393,14 +491,27 @@ class LiveOrchestrator:
                 if ticker:
                     price = ticker.get("last", 0)
                     if price > 0:
+                        db_id = pos.db_id
                         self.exchange.close_position(
                             symbol=pos.symbol,
                             market=pos.market,
                         )
-                        self.tracker.close_position(pos.symbol, price, close_reason="shutdown")
+                        trade = self.tracker.close_position(pos.symbol, price, close_reason="shutdown")
+                        if trade and db_id != -1:
+                            try:
+                                self.sqlite_store.close_trade(
+                                    trade_id=db_id,
+                                    close_price=trade.exit_price,
+                                    pnl=trade.pnl,
+                                    close_reason="shutdown",
+                                )
+                            except Exception as e:
+                                logger.warning("Failed to close trade in DB on shutdown: %s", e)
                         logger.info("Closed position on shutdown: %s", pos.symbol)
             except Exception as e:
                 logger.error("Failed to close position %s on shutdown: %s", pos.symbol, e)
+
+        self._job_save_state()
 
         # Final stats
         stats = self.tracker.get_stats()

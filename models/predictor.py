@@ -221,9 +221,14 @@ class Predictor:
         tensor = self.features_to_tensor(features)
         outputs = self.model(tensor)
 
-        # Extract results for first (only) sample
+        # Extract results
         direction_probs = outputs["direction"][0].cpu().numpy()  # (3,)
         direction_idx = int(direction_probs.argmax())
+        
+        # Bias towards action: if Neutral is max, but Long/Short is > 0.35, take action
+        if direction_idx == 2 and (direction_probs[0] > 0.35 or direction_probs[1] > 0.35):
+            direction_idx = 0 if direction_probs[0] > direction_probs[1] else 1
+            
         direction_label = DIRECTION_LABELS[direction_idx]
 
         magnitude = float(outputs["magnitude"][0, 0].cpu())
@@ -259,6 +264,11 @@ class Predictor:
         for i in range(batch_size):
             dir_probs = outputs["direction"][i].cpu().numpy()
             dir_idx = int(dir_probs.argmax())
+            
+            # Bias towards action
+            if dir_idx == 2 and (dir_probs[0] > 0.35 or dir_probs[1] > 0.35):
+                dir_idx = 0 if dir_probs[0] > dir_probs[1] else 1
+                
             dir_label = DIRECTION_LABELS[dir_idx]
 
             mag = float(outputs["magnitude"][i, 0].cpu())
@@ -313,6 +323,16 @@ class Predictor:
             if c not in skip_cols and window[c].dtype in [np.float64, np.int64, float, int]
         ]
         features = window[num_cols].values
+
+        if features.shape[1] > self.model.in_features:
+            logger.debug(
+                "Feature shape mismatch: pipeline generated %d features, but model expects %d. "
+                "Truncating the extra features (likely orderbook/sentiment).",
+                features.shape[1], self.model.in_features
+            )
+            features = features[:, :self.model.in_features]
+        elif features.shape[1] < self.model.in_features:
+            raise ValueError(f"Not enough features: model expects {self.model.in_features}, got {features.shape[1]}")
 
         prediction = self.predict(features)
         prediction.symbol = symbol

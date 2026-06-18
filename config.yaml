@@ -8,13 +8,16 @@ trading:
     - BTC/USDT
     - ETH/USDT
     - SOL/USDT
-    - BNB/USDT
-    - XRP/USDT
-    - ADA/USDT
     - DOGE/USDT
-    - AVAX/USDT
-    - DOT/USDT
-    - LINK/USDT
+    - SHIB/USDT
+    - PEPE/USDT
+    - WIF/USDT
+    - FLOKI/USDT
+    - BONK/USDT
+    - MEME/USDT
+    - BOME/USDT
+    - BRETT/USDT
+    - POPCAT/USDT
   timeframes:
     - 5m         # primary timeframe for scalping (~288 bars/day)
     - 15m        # context timeframe for trend confirmation

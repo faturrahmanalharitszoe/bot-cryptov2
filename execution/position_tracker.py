@@ -35,6 +35,9 @@ class Position:
     take_profit_prices: list[float] = field(default_factory=list)
     tp_hits: list[float] = field(default_factory=list)  # prices where TP was hit
 
+    # Database reference
+    db_id: int = -1
+
     # Partial exit tracking
     initial_size: float = 0.0  # original size before partial exits
     closed_size: float = 0.0   # how much was closed via TP
