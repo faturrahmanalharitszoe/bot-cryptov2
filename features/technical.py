@@ -60,10 +60,10 @@ class TechnicalFeatures:
 
     def __init__(self):
         try:
-            import pandas_ta as ta
+            import ta
             self.ta = ta
         except ImportError:
-            logger.warning("pandas_ta not installed, using manual implementations")
+            logger.warning("ta library not installed, fallback will produce NaNs for advanced features")
             self.ta = None
 
     def compute(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -87,10 +87,8 @@ class TechnicalFeatures:
         for col in ["open", "high", "low", "close", "volume"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-        if self.ta is not None:
-            df = self._compute_with_pandas_ta(df)
-        else:
-            df = self._compute_manual(df)
+        # Always use the reliable manual implementations + ta library for advanced features
+        df = self._compute_all(df)
 
         # Compute derived features (works either way)
         df = self._compute_derived(df)
@@ -104,86 +102,8 @@ class TechnicalFeatures:
 
         return df
 
-    def _compute_with_pandas_ta(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Compute indicators using pandas_ta library."""
-        ta = self.ta
-
-        # ===== TREND =====
-        df["sma_10"] = ta.sma(df["close"], length=10)
-        df["sma_20"] = ta.sma(df["close"], length=20)
-        df["sma_50"] = ta.sma(df["close"], length=50)
-        df["sma_200"] = ta.sma(df["close"], length=200)
-        df["ema_10"] = ta.ema(df["close"], length=10)
-        df["ema_20"] = ta.ema(df["close"], length=20)
-        df["ema_50"] = ta.ema(df["close"], length=50)
-
-        macd = ta.macd(df["close"], fast=12, slow=26, signal=9)
-        if macd is not None and not macd.empty:
-            df["macd"] = macd.iloc[:, 0]
-            df["macd_signal"] = macd.iloc[:, 1]
-            df["macd_hist"] = macd.iloc[:, 2]
-
-        adx = ta.adx(df["high"], df["low"], df["close"], length=14)
-        if adx is not None and not adx.empty:
-            df["adx"] = adx.iloc[:, 0]
-            df["aroon_up"] = adx.iloc[:, 1] if adx.shape[1] > 1 else np.nan
-            df["aroon_down"] = adx.iloc[:, 2] if adx.shape[1] > 2 else np.nan
-
-        ichimoku = ta.ichimoku(df["high"], df["low"], df["close"])
-        if ichimoku is not None:
-            if isinstance(ichimoku, tuple):
-                ichimoku = ichimoku[0]
-            if ichimoku is not None and not ichimoku.empty:
-                df["ichimoku_a"] = ichimoku.iloc[:, 0] if ichimoku.shape[1] > 0 else np.nan
-                df["ichimoku_b"] = ichimoku.iloc[:, 1] if ichimoku.shape[1] > 1 else np.nan
-
-        # ===== MOMENTUM =====
-        df["rsi_14"] = ta.rsi(df["close"], length=14)
-        df["rsi_7"] = ta.rsi(df["close"], length=7)
-
-        stoch = ta.stoch(df["high"], df["low"], df["close"])
-        if stoch is not None and not stoch.empty:
-            df["stoch_k"] = stoch.iloc[:, 0]
-            df["stoch_d"] = stoch.iloc[:, 1]
-
-        df["cci_14"] = ta.cci(df["high"], df["low"], df["close"], length=14)
-        df["williams_r"] = ta.willr(df["high"], df["low"], df["close"], length=14)
-        df["mfi_14"] = ta.mfi(df["high"], df["low"], df["close"], df["volume"], length=14)
-        df["roc_10"] = ta.roc(df["close"], length=10)
-
-        # ===== VOLATILITY =====
-        bbands = ta.bbands(df["close"], length=20, std=2)
-        if bbands is not None and not bbands.empty:
-            df["bb_lower"] = bbands.iloc[:, 0]
-            df["bb_middle"] = bbands.iloc[:, 1]
-            df["bb_upper"] = bbands.iloc[:, 2]
-            df["bb_width"] = bbands.iloc[:, 3] if bbands.shape[1] > 3 else (
-                (df["bb_upper"] - df["bb_lower"]) / df["bb_middle"]
-            )
-            df["bb_pband"] = bbands.iloc[:, 4] if bbands.shape[1] > 4 else (
-                (df["close"] - df["bb_lower"]) / (df["bb_upper"] - df["bb_lower"])
-            )
-
-        df["atr_14"] = ta.atr(df["high"], df["low"], df["close"], length=14)
-        df["atr_pct"] = df["atr_14"] / df["close"]
-        df["hist_vol_20"] = df["close"].pct_change().rolling(20).std() * np.sqrt(252)
-
-        # ===== VOLUME =====
-        df["obv"] = ta.obv(df["close"], df["volume"])
-        df["mfi"] = df["mfi_14"]  # Already computed above
-        df["volume_sma_20"] = ta.sma(df["volume"], length=20)
-        df["volume_ratio"] = df["volume"] / df["volume_sma_20"]
-
-        # VWAP (approximate from cumulative values)
-        typical_price = (df["high"] + df["low"] + df["close"]) / 3
-        cum_tp_vol = (typical_price * df["volume"]).cumsum()
-        cum_vol = df["volume"].cumsum()
-        df["vwap"] = cum_tp_vol / cum_vol
-
-        return df
-
-    def _compute_manual(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Fallback manual indicator computation (no pandas_ta)."""
+    def _compute_all(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Compute all indicators using a mix of manual math and 'ta' library."""
         close = df["close"]
         high = df["high"]
         low = df["low"]
@@ -245,10 +165,28 @@ class TechnicalFeatures:
         # Hist vol
         df["hist_vol_20"] = close.pct_change().rolling(20).std() * np.sqrt(252)
 
-        # Fill missing columns with NaN
-        for col in ["adx", "aroon_up", "aroon_down", "ichimoku_a", "ichimoku_b",
-                     "cci_14", "williams_r", "mfi_14", "roc_10", "vwap"]:
-            if col not in df.columns:
+        # Use `ta` package for the complex ones
+        if self.ta is not None:
+            # Trend
+            df["adx"] = self.ta.trend.adx(high, low, close, window=14)
+            df["aroon_up"] = self.ta.trend.aroon_up(high, low, window=25)
+            df["aroon_down"] = self.ta.trend.aroon_down(high, low, window=25)
+            df["ichimoku_a"] = self.ta.trend.ichimoku_a(high, low)
+            df["ichimoku_b"] = self.ta.trend.ichimoku_b(high, low)
+            
+            # Momentum
+            df["cci_14"] = self.ta.trend.cci(high, low, close, window=14)
+            df["williams_r"] = self.ta.momentum.williams_r(high, low, close, lbp=14)
+            df["roc_10"] = self.ta.momentum.roc(close, window=10)
+            
+            # Volume
+            df["mfi_14"] = self.ta.volume.money_flow_index(high, low, close, volume, window=14)
+            df["vwap"] = self.ta.volume.volume_weighted_average_price(high, low, close, volume, window=14)
+            df["mfi"] = df["mfi_14"]
+        else:
+            # Fallback (will result in missing features, but won't crash the script immediately)
+            for col in ["adx", "aroon_up", "aroon_down", "ichimoku_a", "ichimoku_b",
+                         "cci_14", "williams_r", "mfi_14", "roc_10", "vwap", "mfi"]:
                 df[col] = np.nan
 
         return df
