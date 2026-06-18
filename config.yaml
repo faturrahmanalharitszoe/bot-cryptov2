@@ -74,13 +74,13 @@ model:
     early_stopping_metric: macro_f1
 
 signal:
-  confidence_threshold: 0.38   # slightly above random (0.33) — more signals for scalping
+  confidence_threshold: 0.35   # slightly above random (0.33) — more signals for scalping
   magnitude_threshold: 0.0003  # 0.03% minimum — scalp targets are tiny
   cooldown_minutes: 5          # 1 bar cooldown (5m) — high-frequency scalp signals
-  position_size_pct: 0.05      # must match risk.max_position_pct so signals pass risk check
+  position_size_pct: 0.15      # must match risk.max_position_pct so signals pass risk check
 
 risk:
-  max_position_pct: 0.05       # 5% of portfolio per scalp trade
+  max_position_pct: 0.15       # 15% of portfolio per scalp trade
   max_concurrent_positions: 8  # allow 8 concurrent scalps across 10 pairs
   stop_loss_pct: 0.003         # 0.3% stop-loss — tight scalp risk (typical 5m ATR ~0.1-0.2%)
   take_profit_levels: [0.005, 0.008, 0.012]  # 0.5%, 0.8%, 1.2% — 1.7:1 / 2.7:1 / 4:1 R:R
