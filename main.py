@@ -485,7 +485,7 @@ def run_scrape(config: Config, logger) -> None:
     # on first run, even if the parquet file already has some data.
     since_dt = datetime.utcnow() - timedelta(days=history_days)
 
-    ohlcv_scraper = OHLCVScraper(testnet=False)  # mainnet for historical data
+    ohlcv_scraper = OHLCVScraper(testnet=False, store=store)  # mainnet for historical data
     for symbol in pairs:
         for tf in timeframes:
             expected_bars = bars_per_day.get(tf, 24) * history_days
