@@ -114,6 +114,23 @@ class EnsembleModel(nn.Module):
         transformer_dropout: float = 0.1,
         max_len: int = 500,
     ):
+        # Store all architecture params for checkpointing
+        self._arch_config = {
+            "in_features": in_features,
+            "cnn_filters": cnn_filters,
+            "cnn_kernel_sizes": cnn_kernel_sizes,
+            "lstm_hidden": lstm_hidden,
+            "lstm_layers": lstm_layers,
+            "lstm_bidirectional": lstm_bidirectional,
+            "lstm_attention": lstm_attention,
+            "transformer_d_model": transformer_d_model,
+            "transformer_nhead": transformer_nhead,
+            "transformer_layers": transformer_layers,
+            "transformer_ff_dim": transformer_ff_dim,
+            "dropout": dropout,
+            "transformer_dropout": transformer_dropout,
+            "max_len": max_len,
+        }
         super().__init__()
 
         # --- Branch 1: CNN-LSTM ---
@@ -231,6 +248,7 @@ class EnsembleModel(nn.Module):
             "model_state_dict": self.state_dict(),
             "in_features": self.in_features,
             "combined_dim": self.combined_dim,
+            "arch_config": self._arch_config,
         }
         if optimizer is not None:
             checkpoint["optimizer_state_dict"] = optimizer.state_dict()
@@ -443,9 +461,31 @@ class EnsembleModel(nn.Module):
 
         checkpoint = torch.load(path, map_location=device, weights_only=False)
 
-        # Use saved in_features if not provided
-        if "in_features" in checkpoint and "in_features" not in model_kwargs:
-            model_kwargs["in_features"] = checkpoint["in_features"]
+        # Restore architecture config from checkpoint (if saved).
+        # Checkpoints saved before arch_config was added will only have
+        # in_features — fall back to caller-supplied kwargs in that case.
+        if "arch_config" in checkpoint:
+            saved_arch = checkpoint["arch_config"]
+            # Merge: saved_arch is the source of truth, but allow explicit
+            # model_kwargs from the caller to override (e.g. in tests).
+            merged = {**saved_arch, **model_kwargs}
+            model_kwargs = merged
+            logger.info(
+                "Restored arch_config from checkpoint: in_features=%s, cnn_filters=%s, "
+                "lstm_hidden=%s, d_model=%s",
+                saved_arch.get("in_features"),
+                saved_arch.get("cnn_filters"),
+                saved_arch.get("lstm_hidden"),
+                saved_arch.get("transformer_d_model"),
+            )
+        else:
+            # Backward compat: old checkpoints only saved in_features
+            if "in_features" in checkpoint and "in_features" not in model_kwargs:
+                model_kwargs["in_features"] = checkpoint["in_features"]
+            logger.warning(
+                "Checkpoint lacks arch_config — using caller kwargs/defaults. "
+                "Consider re-training to produce a checkpoint with full arch info."
+            )
 
         model = cls(**model_kwargs)
         model.load_state_dict(checkpoint["model_state_dict"])

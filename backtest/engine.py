@@ -204,12 +204,17 @@ class BacktestEngine:
                     current_prices[symbol] = float(df.loc[bar_time, "close"])
 
             # --- Step 1: Update portfolio value ---
-            unrealized = self.tracker.compute_unrealized_pnl(current_prices)
-            total_equity = self.cash + unrealized
+            # Use positions_value (full market value) NOT unrealized_pnl (just the delta)
+            # Cash was debited on entry, so equity = cash + current value of all positions
+            positions_value = self.tracker.compute_positions_value(current_prices)
+            total_equity = self.cash + positions_value
             self.risk_manager.update_portfolio_value(total_equity)
 
             if total_equity > peak_equity:
                 peak_equity = total_equity
+
+            # Convert bar_time to unix timestamp for duration tracking
+            bar_ts = bar_time.timestamp() if hasattr(bar_time, "timestamp") else float(bar_time.value) / 1e9
 
             # --- Step 2: Check trailing stops ---
             sl_triggers = self.tracker.check_stop_losses(current_prices)
@@ -219,6 +224,7 @@ class BacktestEngine:
                 trade = self.tracker.close_position(
                     symbol, slippage_price,
                     close_reason="stop_loss",
+                    bar_timestamp=bar_ts,
                 )
                 if trade:
                     # Direction-aware close: long sells at market, short buys back
@@ -261,6 +267,7 @@ class BacktestEngine:
                 # Remove fully closed positions
                 if info["is_full_close"]:
                     self.tracker._positions.pop(symbol, None)
+                    duration_hours = (bar_ts - pos.entry_time) / 3600.0
                     trade = ClosedTrade(
                         symbol=symbol,
                         market=pos.market,
@@ -270,10 +277,11 @@ class BacktestEngine:
                         size=pos.size + close_size,
                         leverage=pos.leverage,
                         entry_time=pos.entry_time,
-                        exit_time=time.time(),
+                        exit_time=bar_ts,
                         pnl=pnl,
                         pnl_pct=pnl / (pos.entry_price * pos.initial_size) if pos.entry_price > 0 else 0,
                         fees=fee,
+                        duration_hours=duration_hours,
                         close_reason="take_profit",
                     )
                     self.tracker._trade_history.append(trade)
@@ -331,7 +339,7 @@ class BacktestEngine:
                     signals_approved += 1
 
                     # --- Step 7: Simulate execution ---
-                    self._execute_entry(signal, current_prices[symbol])
+                    self._execute_entry(signal, current_prices[symbol], bar_ts=bar_ts)
 
                 elif signal.is_exit:
                     # Close existing position
@@ -343,6 +351,7 @@ class BacktestEngine:
                         )
                         trade = self.tracker.close_position(
                             signal.symbol, exec_price, close_reason="signal",
+                            bar_timestamp=bar_ts,
                         )
                         if trade:
                             # Direction-aware close
@@ -355,15 +364,15 @@ class BacktestEngine:
                             self.cash += close_value - fee
 
             # --- Record equity ---
-            unrealized = self.tracker.compute_unrealized_pnl(current_prices)
-            total_equity = self.cash + unrealized
+            positions_value = self.tracker.compute_positions_value(current_prices)
+            total_equity = self.cash + positions_value
             drawdown = (peak_equity - total_equity) / peak_equity if peak_equity > 0 else 0.0
 
             equity_curve.append(EquityPoint(
                 timestamp=bar_time.to_pydatetime(),
                 equity=total_equity,
                 cash=self.cash,
-                unrealized_pnl=unrealized,
+                unrealized_pnl=self.tracker.compute_unrealized_pnl(current_prices),
                 positions=self.tracker.position_count,
                 drawdown=drawdown,
             ))
@@ -377,10 +386,14 @@ class BacktestEngine:
                 if timeline[-1] in df.index:
                     last_prices[symbol] = float(df.loc[timeline[-1], "close"])
 
+            last_bar_ts = timeline[-1].timestamp() if hasattr(timeline[-1], "timestamp") else float(timeline[-1].value) / 1e9
             for symbol in list(self.tracker._positions.keys()):
                 price = last_prices.get(symbol)
                 if price:
-                    trade = self.tracker.close_position(symbol, price, close_reason="backtest_end")
+                    trade = self.tracker.close_position(
+                        symbol, price, close_reason="backtest_end",
+                        bar_timestamp=last_bar_ts,
+                    )
                     if trade:
                         # Direction-aware close
                         if trade.side == "long":
@@ -411,7 +424,7 @@ class BacktestEngine:
             timestamps=timestamps,
         )
 
-    def _execute_entry(self, signal: TradeSignal, current_price: float) -> None:
+    def _execute_entry(self, signal: TradeSignal, current_price: float, bar_ts: float = 0.0) -> None:
         """Simulate order entry with slippage."""
         exec_price = self._apply_slippage(
             signal.symbol, current_price,
@@ -439,6 +452,7 @@ class BacktestEngine:
             entry_price=exec_price,
             size=size,
             leverage=signal.leverage,
+            entry_time=bar_ts if bar_ts > 0 else time.time(),
             stop_loss_price=stop_loss_price,
             take_profit_prices=signal.take_profit_prices or [],
         )

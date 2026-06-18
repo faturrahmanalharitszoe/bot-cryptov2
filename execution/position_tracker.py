@@ -218,8 +218,13 @@ class PositionTracker:
         exit_price: float,
         close_reason: str = "signal",
         fees: float = 0.0,
+        bar_timestamp: float | None = None,
     ) -> ClosedTrade | None:
         """Close a position by symbol.
+
+        Args:
+            bar_timestamp: Unix timestamp of the current bar (for backtest duration calc).
+                           If None, falls back to wall-clock time.time().
 
         Returns:
             ClosedTrade if position existed, None otherwise
@@ -233,7 +238,8 @@ class PositionTracker:
         pnl = pos.unrealized_pnl(exit_price)
         pnl_pct = pos.unrealized_pnl_pct(exit_price)
 
-        exit_time = time.time()
+        # Use bar_timestamp for backtest accuracy; fall back to wall clock for live
+        exit_time = bar_timestamp if bar_timestamp is not None else time.time()
         duration_hours = (exit_time - pos.entry_time) / 3600.0
 
         trade = ClosedTrade(
@@ -292,6 +298,28 @@ class PositionTracker:
         for symbol, pos in self._positions.items():
             price = prices.get(symbol, pos.entry_price)
             total += pos.unrealized_pnl(price)
+        return total
+
+    def compute_positions_value(self, prices: dict[str, float]) -> float:
+        """Compute the total current market value of all open positions.
+
+        For longs:  size * current_price
+        For shorts: size * (2 * entry_price - current_price)
+                    (margin returned + unrealized PnL at current price)
+
+        This must be added to ``self.cash`` (which was debited on entry) to get
+        the true portfolio equity.  Using ``unrealized_pnl`` alone is WRONG
+        because that only gives the delta, not the total locked value.
+        """
+        total = 0.0
+        for symbol, pos in self._positions.items():
+            price = prices.get(symbol, pos.entry_price)
+            if pos.is_long:
+                total += pos.size * price
+            else:
+                # Short: we locked up `size * entry_price` as margin;
+                # current close-out value is `size * (2*entry - price)`
+                total += pos.size * (2 * pos.entry_price - price)
         return total
 
     def get_total_pnl(self, prices: dict[str, float]) -> float:

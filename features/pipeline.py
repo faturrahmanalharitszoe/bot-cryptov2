@@ -44,7 +44,7 @@ class FeaturePipeline:
         self.parquet = parquet_store or ParquetStore()
         self.sqlite = sqlite_store or SQLiteStore()
         self.base_timeframe = base_timeframe
-        self.timeframes = timeframes or ["5m", "15m", "1h", "4h"]
+        self.timeframes = timeframes or ["5m", "15m"]
 
         self.technical = TechnicalFeatures()
         self.sentiment = SentimentFeatures(self.sqlite)
@@ -219,13 +219,19 @@ class FeaturePipeline:
         close = features["close"]
         future_return = close.shift(-prediction_horizon) / close - 1
 
-        # Direction: 0=neutral, 1=long, 2=short
-        direction = pd.Series(1, index=features.index)  # Default neutral
-        direction[future_return > 0.005] = 0  # Long (>0.5% up)
-        direction[future_return < -0.005] = 2  # Short (>0.5% down)
+        # Direction labels aligned with ensemble.py constants:
+        #   DIRECTION_LONG    = 0  (future_return > +0.8%)
+        #   DIRECTION_SHORT   = 1  (future_return < -0.8%)
+        #   DIRECTION_NEUTRAL = 2  (|future_return| <= 0.8%)
+        # Keep at 0.8% to match the currently-trained model checkpoint.
+        # Risk management handles position sizing separately.
+        direction = pd.Series(2, index=features.index)           # Neutral default
+        direction[future_return > 0.008] = 0               # Long  (>+0.8% move)
+        direction[future_return < -0.008] = 1              # Short (<-0.8% move)
+        direction = direction.fillna(2).astype(int)
 
-        # Magnitude: absolute expected move
-        magnitude = future_return.abs()
+        # Magnitude (regression target): absolute percentage move
+        magnitude = future_return.abs().fillna(0.0)
 
         # Confidence proxy: based on volatility and trend clarity
         # Higher when trend is clear and volatility is manageable
@@ -233,7 +239,7 @@ class FeaturePipeline:
             trend_clarity = features["adx"] / 100
         else:
             trend_clarity = pd.Series(0.5, index=features.index)
-        
+
         if "hist_vol_20" in features.columns:
             vol_factor = 1 - features["hist_vol_20"].clip(0, 1)
         else:
@@ -247,11 +253,25 @@ class FeaturePipeline:
         magnitude = magnitude.iloc[:-prediction_horizon]
         confidence = confidence.iloc[:-prediction_horizon]
 
+        # Log class distribution so imbalance is always visible
+        n_total = len(direction)
+        n_long    = int((direction == 0).sum())
+        n_short   = int((direction == 1).sum())
+        n_neutral = int((direction == 2).sum())
         logger.info(
-            f"Training data: {len(features)} samples, "
-            f"{(direction==0).sum()} long, {(direction==1).sum()} neutral, "
-            f"{(direction==2).sum()} short"
+            "Training labels: %d samples | "
+            "Long=%d (%.1f%%) | Short=%d (%.1f%%) | Neutral=%d (%.1f%%)",
+            n_total,
+            n_long,    100.0 * n_long    / max(n_total, 1),
+            n_short,   100.0 * n_short   / max(n_total, 1),
+            n_neutral, 100.0 * n_neutral / max(n_total, 1),
         )
+        if n_neutral / max(n_total, 1) > 0.60:
+            logger.warning(
+                "High class imbalance detected: Neutral=%.1f%% of labels. "
+                "Enable use_class_weights and use_weighted_sampler in config.",
+                100.0 * n_neutral / max(n_total, 1),
+            )
 
         return features, direction, magnitude, confidence
 

@@ -102,14 +102,14 @@ class Config:
         """Get a path under the data directory, creating it if needed."""
         base = PROJECT_ROOT / self.storage.get("data_dir", "data")
         path = base.joinpath(*subdirs)
-        path.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
     def get_model_path(self, *subdirs: str) -> Path:
         """Get a path under the models directory, creating it if needed."""
         base = PROJECT_ROOT / self.storage.get("models_dir", "models/saved")
         path = base.joinpath(*subdirs)
-        path.mkdir(parents=True, exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         return path
 
     def __repr__(self) -> str:

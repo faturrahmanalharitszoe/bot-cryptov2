@@ -4,6 +4,7 @@
 
 # Exchange API
 ccxt>=4.0.0
+yfinance>=0.2.40          # Fallback OHLCV source when Binance is geo-blocked
 
 # Data processing
 pandas>=2.0.0

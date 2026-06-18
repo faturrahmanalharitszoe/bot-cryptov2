@@ -1,5 +1,5 @@
 # ========================
-# Bot-CryptoV2 Configuration
+# Bot-CryptoV2 Configuration — SCALPING MODE
 # ========================
 
 trading:
@@ -16,65 +16,77 @@ trading:
     - DOT/USDT
     - LINK/USDT
   timeframes:
-    - 5m
-    - 15m
-    - 1h
-    - 4h
-  default_market: spot  # spot | futures — starting market
-  max_leverage: 3
+    - 5m         # primary timeframe for scalping (~288 bars/day)
+    - 15m        # context timeframe for trend confirmation
+  default_market: futures  # futures preferred for scalping (lower fees, shorting)
+  max_leverage: 5
 
 model:
-  input_window: 90           # number of timesteps to look back
-  retrain_interval_hours: 24 # retrain model every N hours
+  input_window: 20           # 20 bars × 5m = 100min lookback (scalping)
+  retrain_interval_hours: 24
   ensemble_weights:
     cnn_lstm: 0.35
     transformer: 0.35
     mlp_head: 0.30
-  # CNN-LSTM branch
+  # CNN-LSTM branch — shallower for faster CPU training
   cnn:
-    filters: [64, 128]
+    filters: [32, 64]        # was [64, 128] — halved filters
     kernel_sizes: [3, 5]
     dropout: 0.3
-  # LSTM branch
+  # LSTM branch — unidirectional saves ~2x time vs bidirectional
   lstm:
-    hidden_size: 128
-    num_layers: 2
-    dropout: 0.3
-    bidirectional: true
-    attention: true
-  # Transformer branch
+    hidden_size: 64          # was 128 — halved hidden size
+    num_layers: 1            # was 2 — single layer enough for CPU
+    dropout: 0.2
+    bidirectional: false     # was true — bidirectional doubles compute
+    attention: false         # was true — skip attention on CPU
+  # Transformer branch — 2 layers instead of 4
   transformer:
-    d_model: 128
-    nhead: 8
-    num_layers: 4
-    dim_feedforward: 256
+    d_model: 64              # was 128 — halved
+    nhead: 4                 # was 8 — must divide d_model (64/4=16 ✓)
+    num_layers: 2            # was 4 — halved
+    dim_feedforward: 128     # was 256 — halved
     dropout: 0.1
   # Training
   training:
-    batch_size: 32                # reduced from 64 to lower RAM usage
-    epochs: 100
+    batch_size: 256          # was 32 — larger batch = fewer iterations = faster epoch
+    epochs: 50               # was 100 — early stopping will kick in anyway
     learning_rate: 0.001
     weight_decay: 0.0001
-    scheduler: cosine  # cosine | step | plateau
-    early_stopping_patience: 15
+    scheduler: cosine
+    early_stopping_patience: 10  # was 15 — faster convergence detection
     validation_split: 0.15
-    test_split: 0.1
-    max_ram_mb: 4096              # 4 GB soft cap — warns + forces GC when exceeded (0 = unlimited)
-    gc_every_n_epochs: 1          # run gc.collect() every N epochs to release memory
+    test_split: 0.10
+    max_ram_mb: 0            # disable RAM cap warning (it was noisy, not actionable)
+    gc_every_n_epochs: 5     # was 1 — GC every epoch wastes time on CPU
+
+    # -----------------------------------------------------------------------
+    # Class-imbalance handling (Neutral typically 60-70% of labels)
+    # -----------------------------------------------------------------------
+    use_class_weights: false      # disabled to avoid double-penalizing with Focal Loss
+    use_weighted_sampler: true    # WeightedRandomSampler for balanced mini-batches
+    label_smoothing: 0.1          # prevents overconfidence; improves calibration
+    focal_loss_gamma: 2.0         # set to 2.0 to use Focal Loss instead of CE
+    mixup_alpha: 0.0              # set to 0.4 to enable Mixup augmentation
+
+    # Use macro_f1 for checkpointing (more imbalance-aware than val_loss)
+    # Options: val_loss | macro_f1
+    early_stopping_metric: macro_f1
 
 signal:
-  confidence_threshold: 0.50   # lowered from 0.70 — model avg ~0.63 after 10 epochs; raise after retraining
-  magnitude_threshold: 0.002   # 0.2% minimum expected move (was 0.005)
-  cooldown_minutes: 15         # min time between signals per pair (was 30)
+  confidence_threshold: 0.38   # slightly above random (0.33) — more signals for scalping
+  magnitude_threshold: 0.0003  # 0.03% minimum — scalp targets are tiny
+  cooldown_minutes: 5          # 1 bar cooldown (5m) — high-frequency scalp signals
+  position_size_pct: 0.05      # must match risk.max_position_pct so signals pass risk check
 
 risk:
-  max_position_pct: 0.08       # max 8% of portfolio per trade (was 5%)
-  max_concurrent_positions: 5  # allow more concurrent positions (was 3)
-  stop_loss_pct: 0.015         # 1.5% trailing stop-loss (was 2%)
-  take_profit_levels: [0.02, 0.04, 0.07]
-  take_profit_weights: [0.4, 0.35, 0.25]  # % of position to close at each level
-  max_daily_drawdown_pct: 0.15  # 15% daily drawdown limit (was 5% — too aggressive)
-  max_weekly_drawdown_pct: 0.20  # 20% weekly (was 10%)
+  max_position_pct: 0.05       # 5% of portfolio per scalp trade
+  max_concurrent_positions: 8  # allow 8 concurrent scalps across 10 pairs
+  stop_loss_pct: 0.003         # 0.3% stop-loss — tight scalp risk (typical 5m ATR ~0.1-0.2%)
+  take_profit_levels: [0.005, 0.008, 0.012]  # 0.5%, 0.8%, 1.2% — 1.7:1 / 2.7:1 / 4:1 R:R
+  take_profit_weights: [0.5, 0.3, 0.2]      # % of position to close at each level
+  max_daily_drawdown_pct: 0.05  # 5% daily drawdown limit — tight for scalping
+  max_weekly_drawdown_pct: 0.10 # 10% weekly
 
 exchange:
   testnet: true
@@ -84,8 +96,8 @@ exchange:
 
 scraping:
   ohlcv:
-    history_days: 90       # initial history to fetch
-    update_interval_sec: 300  # 5 minutes
+    history_days: 55       # yfinance 5m limit is 60d — stay safely within
+    update_interval_sec: 60   # 1 minute — scalping needs fresh data
   orderbook:
     depth: 20              # levels
     update_interval_sec: 60
@@ -106,14 +118,14 @@ storage:
   models_dir: models/saved
 
 backtest:
-  start_date: "2026-01-01"
-  end_date: "2026-12-31"
+  start_date: "2026-04-01"
+  end_date: "2026-06-08"
   initial_capital: 10000.0
   commission_spot: 0.001       # 0.1%
-  commission_futures: 0.0002   # 0.02%
-  slippage: 0.0005             # 0.05%
+  commission_futures: 0.0004   # 0.04% taker (scalping uses market orders)
+  slippage: 0.0003             # 0.03% — tighter slippage for liquid pairs
   walk_forward:
-    train_months: 6
+    train_months: 1            # only ~2 months of 5m data available
     test_months: 1
     step_months: 1
 

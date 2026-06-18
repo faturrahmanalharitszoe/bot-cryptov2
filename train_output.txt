@@ -1,0 +1,452 @@
+[19:13:34] INFO     ╔══════════════════════════════════════════════╗           
+           INFO     ║       Bot-CryptoV2 — DL Swing Trading        ║           
+           INFO     ║   CNN-LSTM + Transformer Ensemble Model       ║          
+           INFO     ╚══════════════════════════════════════════════╝           
+           INFO     Config: Config(mode=backtest, pairs=10)                    
+           INFO     Mode: train                                                
+           INFO     ===========================================================
+                    =                                                          
+           INFO     MODE: MODEL TRAINING                                       
+           INFO     ===========================================================
+                    =                                                          
+[19:13:40] INFO     Computing training data for BTC/USDT...                    
+High class imbalance detected: Neutral=84.5% of labels. Enable use_class_weights and use_weighted_sampler in config.
+[19:13:41] INFO       BTC/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for ETH/USDT...                    
+High class imbalance detected: Neutral=78.4% of labels. Enable use_class_weights and use_weighted_sampler in config.
+           INFO       ETH/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for SOL/USDT...                    
+High class imbalance detected: Neutral=70.5% of labels. Enable use_class_weights and use_weighted_sampler in config.
+[19:13:42] INFO       SOL/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for BNB/USDT...                    
+High class imbalance detected: Neutral=75.3% of labels. Enable use_class_weights and use_weighted_sampler in config.
+           INFO       BNB/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for XRP/USDT...                    
+High class imbalance detected: Neutral=73.5% of labels. Enable use_class_weights and use_weighted_sampler in config.
+[19:13:43] INFO       XRP/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for ADA/USDT...                    
+High class imbalance detected: Neutral=67.3% of labels. Enable use_class_weights and use_weighted_sampler in config.
+           INFO       ADA/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for DOGE/USDT...                   
+High class imbalance detected: Neutral=65.6% of labels. Enable use_class_weights and use_weighted_sampler in config.
+           INFO       DOGE/USDT: 2616 windows, 254 features per timestep       
+           INFO     Computing training data for AVAX/USDT...                   
+High class imbalance detected: Neutral=64.2% of labels. Enable use_class_weights and use_weighted_sampler in config.
+[19:13:44] INFO       AVAX/USDT: 2616 windows, 254 features per timestep       
+           INFO     Computing training data for DOT/USDT...                    
+           INFO       DOT/USDT: 2616 windows, 254 features per timestep        
+           INFO     Computing training data for LINK/USDT...                   
+High class imbalance detected: Neutral=62.6% of labels. Enable use_class_weights and use_weighted_sampler in config.
+[19:13:45] INFO       LINK/USDT: 2616 windows, 254 features per timestep       
+           INFO     Total training samples: 26160, features: 254, window: 30   
+           INFO     Trainer using device: cpu                                  
+           INFO     Direction loss: FocalLoss(gamma=2.0, label_smoothing=0.10) 
+[19:13:48] INFO     Dataset split: train=19620, val=3924, test=2616            
+                    (batch_size=256)                                           
+           INFO     WeightedRandomSampler enabled: class counts train={'long': 
+                    2216, 'short': 3062, 'neutral': 14342}                     
+           INFO     Starting training: epochs=50, batch_size=256, lr=0.001,    
+                    early_stopping_metric=macro_f1, label_smoothing=0.10,      
+                    focal_gamma=2.0                                            
+Starting training: epochs=50, batch_size=256, lr=0.001, stop_metric=macro_f1
+[19:14:19] INFO     Epoch 1/50 | train_loss=1.061275 val_loss=0.745842 |       
+                    train_acc=0.3902 val_acc=0.2454 | val_f1=0.2087 |          
+                    train[long=0.500 short=0.274 neutral=0.392] |              
+                    val[long=0.277 short=0.803 neutral=0.000] | lr=9.76e-04 |  
+                    30.4s | RAM=0MB                                            
+Epoch 1/50 | train_loss=1.061275 val_loss=0.745842 | train_acc=0.3902 val_acc=0.2454 | val_f1=0.2087 | train[long=0.500 short=0.274 neutral=0.392] | val[long=0.277 short=0.803 neutral=0.000] | lr=9.76e-04 | 30.4s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.745842, macro_f1=0.2087)  
+[19:14:47] INFO     Epoch 2/50 | train_loss=0.895982 val_loss=0.753047 |       
+                    train_acc=0.4077 val_acc=0.2347 | val_f1=0.2194 |          
+                    train[long=0.637 short=0.251 neutral=0.334] |              
+                    val[long=0.465 short=0.589 neutral=0.009] | lr=9.05e-04 |  
+                    28.1s | RAM=0MB                                            
+Epoch 2/50 | train_loss=0.895982 val_loss=0.753047 | train_acc=0.4077 val_acc=0.2347 | val_f1=0.2194 | train[long=0.637 short=0.251 neutral=0.334] | val[long=0.465 short=0.589 neutral=0.009] | lr=9.05e-04 | 28.1s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.753047, macro_f1=0.2194)  
+[19:15:14] INFO     Epoch 3/50 | train_loss=1.033939 val_loss=0.806218 |       
+                    train_acc=0.4252 val_acc=0.2317 | val_f1=0.2156 |          
+                    train[long=0.591 short=0.282 neutral=0.398] |              
+                    val[long=0.475 short=0.579 neutral=0.004] | lr=7.94e-04 |  
+                    27.2s | RAM=0MB                                            
+Epoch 3/50 | train_loss=1.033939 val_loss=0.806218 | train_acc=0.4252 val_acc=0.2317 | val_f1=0.2156 | train[long=0.591 short=0.282 neutral=0.398] | val[long=0.475 short=0.579 neutral=0.004] | lr=7.94e-04 | 27.2s | RAM=0MB
+[19:15:38] INFO     Epoch 4/50 | train_loss=0.939430 val_loss=0.797893 |       
+                    train_acc=0.4235 val_acc=0.2329 | val_f1=0.2164 |          
+                    train[long=0.551 short=0.338 neutral=0.381] |              
+                    val[long=0.499 short=0.575 neutral=0.000] | lr=6.55e-04 |  
+                    23.7s | RAM=0MB                                            
+Epoch 4/50 | train_loss=0.939430 val_loss=0.797893 | train_acc=0.4235 val_acc=0.2329 | val_f1=0.2164 | train[long=0.551 short=0.338 neutral=0.381] | val[long=0.499 short=0.575 neutral=0.000] | lr=6.55e-04 | 23.7s | RAM=0MB
+[19:16:01] INFO     Epoch 5/50 | train_loss=0.799468 val_loss=0.833693 |       
+                    train_acc=0.4357 val_acc=0.2286 | val_f1=0.2112 |          
+                    train[long=0.569 short=0.361 neutral=0.375] |              
+                    val[long=0.465 short=0.584 neutral=0.000] | lr=5.00e-04 |  
+                    23.3s | RAM=0MB                                            
+Epoch 5/50 | train_loss=0.799468 val_loss=0.833693 | train_acc=0.4357 val_acc=0.2286 | val_f1=0.2112 | train[long=0.569 short=0.361 neutral=0.375] | val[long=0.465 short=0.584 neutral=0.000] | lr=5.00e-04 | 23.3s | RAM=0MB
+[19:16:26] INFO     Epoch 6/50 | train_loss=0.922751 val_loss=0.825482 |       
+                    train_acc=0.4349 val_acc=0.2294 | val_f1=0.2103 |          
+                    train[long=0.489 short=0.412 neutral=0.404] |              
+                    val[long=0.435 short=0.611 neutral=0.000] | lr=3.45e-04 |  
+                    25.2s | RAM=0MB                                            
+Epoch 6/50 | train_loss=0.922751 val_loss=0.825482 | train_acc=0.4349 val_acc=0.2294 | val_f1=0.2103 | train[long=0.489 short=0.412 neutral=0.404] | val[long=0.435 short=0.611 neutral=0.000] | lr=3.45e-04 | 25.2s | RAM=0MB
+[19:16:57] INFO     Epoch 7/50 | train_loss=0.942823 val_loss=0.815990 |       
+                    train_acc=0.4418 val_acc=0.2398 | val_f1=0.2215 |          
+                    train[long=0.476 short=0.447 neutral=0.402] |              
+                    val[long=0.402 short=0.644 neutral=0.016] | lr=2.06e-04 |  
+                    30.7s | RAM=0MB                                            
+Epoch 7/50 | train_loss=0.942823 val_loss=0.815990 | train_acc=0.4418 val_acc=0.2398 | val_f1=0.2215 | train[long=0.476 short=0.447 neutral=0.402] | val[long=0.402 short=0.644 neutral=0.016] | lr=2.06e-04 | 30.7s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.815990, macro_f1=0.2215)  
+[19:17:38] INFO     Epoch 8/50 | train_loss=0.788357 val_loss=0.823121 |       
+                    train_acc=0.4416 val_acc=0.2281 | val_f1=0.2116 |          
+                    train[long=0.468 short=0.442 neutral=0.414] |              
+                    val[long=0.432 short=0.592 neutral=0.007] | lr=9.55e-05 |  
+                    40.5s | RAM=0MB                                            
+Epoch 8/50 | train_loss=0.788357 val_loss=0.823121 | train_acc=0.4416 val_acc=0.2281 | val_f1=0.2116 | train[long=0.468 short=0.442 neutral=0.414] | val[long=0.432 short=0.592 neutral=0.007] | lr=9.55e-05 | 40.5s | RAM=0MB
+[19:18:07] INFO     Epoch 9/50 | train_loss=0.827168 val_loss=0.795865 |       
+                    train_acc=0.4442 val_acc=0.2418 | val_f1=0.2290 |          
+                    train[long=0.503 short=0.403 neutral=0.425] |              
+                    val[long=0.481 short=0.578 neutral=0.021] | lr=2.45e-05 |  
+                    29.2s | RAM=0MB                                            
+Epoch 9/50 | train_loss=0.827168 val_loss=0.795865 | train_acc=0.4442 val_acc=0.2418 | val_f1=0.2290 | train[long=0.503 short=0.403 neutral=0.425] | val[long=0.481 short=0.578 neutral=0.021] | lr=2.45e-05 | 29.2s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.795865, macro_f1=0.2290)  
+[19:18:36] INFO     Epoch 10/50 | train_loss=0.780988 val_loss=0.814346 |      
+                    train_acc=0.4465 val_acc=0.2403 | val_f1=0.2275 |          
+                    train[long=0.482 short=0.414 neutral=0.443] |              
+                    val[long=0.434 short=0.590 neutral=0.029] | lr=1.00e-03 |  
+                    29.4s | RAM=0MB                                            
+Epoch 10/50 | train_loss=0.780988 val_loss=0.814346 | train_acc=0.4465 val_acc=0.2403 | val_f1=0.2275 | train[long=0.482 short=0.414 neutral=0.443] | val[long=0.434 short=0.590 neutral=0.029] | lr=1.00e-03 | 29.4s | RAM=0MB
+[19:19:06] INFO     Epoch 11/50 | train_loss=0.857000 val_loss=0.783927 |      
+                    train_acc=0.4409 val_acc=0.3894 | val_f1=0.3124 |          
+                    train[long=0.462 short=0.459 neutral=0.401] |              
+                    val[long=0.052 short=0.639 neutral=0.397] | lr=9.94e-04 |  
+                    29.3s | RAM=0MB                                            
+Epoch 11/50 | train_loss=0.857000 val_loss=0.783927 | train_acc=0.4409 val_acc=0.3894 | val_f1=0.3124 | train[long=0.462 short=0.459 neutral=0.401] | val[long=0.052 short=0.639 neutral=0.397] | lr=9.94e-04 | 29.3s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.783927, macro_f1=0.3124)  
+[19:19:37] INFO     Epoch 12/50 | train_loss=0.889999 val_loss=0.865194 |      
+                    train_acc=0.4379 val_acc=0.2339 | val_f1=0.1950 |          
+                    train[long=0.390 short=0.470 neutral=0.452] |              
+                    val[long=0.232 short=0.791 neutral=0.000] | lr=9.76e-04 |  
+                    30.6s | RAM=0MB                                            
+Epoch 12/50 | train_loss=0.889999 val_loss=0.865194 | train_acc=0.4379 val_acc=0.2339 | val_f1=0.1950 | train[long=0.390 short=0.470 neutral=0.452] | val[long=0.232 short=0.791 neutral=0.000] | lr=9.76e-04 | 30.6s | RAM=0MB
+[19:20:17] INFO     Epoch 13/50 | train_loss=0.920088 val_loss=0.791427 |      
+                    train_acc=0.4466 val_acc=0.2288 | val_f1=0.2091 |          
+                    train[long=0.464 short=0.416 neutral=0.459] |              
+                    val[long=0.426 short=0.616 neutral=0.000] | lr=9.46e-04 |  
+                    40.5s | RAM=0MB                                            
+Epoch 13/50 | train_loss=0.920088 val_loss=0.791427 | train_acc=0.4466 val_acc=0.2288 | val_f1=0.2091 | train[long=0.464 short=0.416 neutral=0.459] | val[long=0.426 short=0.616 neutral=0.000] | lr=9.46e-04 | 40.5s | RAM=0MB
+[19:21:11] INFO     Epoch 14/50 | train_loss=0.792291 val_loss=0.732477 |      
+                    train_acc=0.4485 val_acc=0.2329 | val_f1=0.2163 |          
+                    train[long=0.462 short=0.419 neutral=0.465] |              
+                    val[long=0.490 short=0.581 neutral=0.000] | lr=9.05e-04 |  
+                    54.2s | RAM=0MB                                            
+Epoch 14/50 | train_loss=0.792291 val_loss=0.732477 | train_acc=0.4485 val_acc=0.2329 | val_f1=0.2163 | train[long=0.462 short=0.419 neutral=0.465] | val[long=0.490 short=0.581 neutral=0.000] | lr=9.05e-04 | 54.2s | RAM=0MB
+[19:21:59] INFO     Epoch 15/50 | train_loss=0.797716 val_loss=0.772476 |      
+                    train_acc=0.4461 val_acc=0.2263 | val_f1=0.2086 |          
+                    train[long=0.470 short=0.438 neutral=0.430] |              
+                    val[long=0.447 short=0.589 neutral=0.000] | lr=8.54e-04 |  
+                    47.3s | RAM=0MB                                            
+Epoch 15/50 | train_loss=0.797716 val_loss=0.772476 | train_acc=0.4461 val_acc=0.2263 | val_f1=0.2086 | train[long=0.470 short=0.438 neutral=0.430] | val[long=0.447 short=0.589 neutral=0.000] | lr=8.54e-04 | 47.3s | RAM=0MB
+[19:22:46] INFO     Epoch 16/50 | train_loss=0.740915 val_loss=0.781866 |      
+                    train_acc=0.4500 val_acc=0.2288 | val_f1=0.2133 |          
+                    train[long=0.509 short=0.426 neutral=0.414] |              
+                    val[long=0.501 short=0.557 neutral=0.000] | lr=7.94e-04 |  
+                    47.1s | RAM=0MB                                            
+Epoch 16/50 | train_loss=0.740915 val_loss=0.781866 | train_acc=0.4500 val_acc=0.2288 | val_f1=0.2133 | train[long=0.509 short=0.426 neutral=0.414] | val[long=0.501 short=0.557 neutral=0.000] | lr=7.94e-04 | 47.1s | RAM=0MB
+[19:23:31] INFO     Epoch 17/50 | train_loss=0.876143 val_loss=0.876995 |      
+                    train_acc=0.4495 val_acc=0.2416 | val_f1=0.2104 |          
+                    train[long=0.479 short=0.405 neutral=0.464] |              
+                    val[long=0.297 short=0.756 neutral=0.007] | lr=7.27e-04 |  
+                    45.1s | RAM=0MB                                            
+Epoch 17/50 | train_loss=0.876143 val_loss=0.876995 | train_acc=0.4495 val_acc=0.2416 | val_f1=0.2104 | train[long=0.479 short=0.405 neutral=0.464] | val[long=0.297 short=0.756 neutral=0.007] | lr=7.27e-04 | 45.1s | RAM=0MB
+[19:24:09] INFO     Epoch 18/50 | train_loss=0.737146 val_loss=0.779776 |      
+                    train_acc=0.4653 val_acc=0.2306 | val_f1=0.2140 |          
+                    train[long=0.512 short=0.465 neutral=0.420] |              
+                    val[long=0.479 short=0.578 neutral=0.001] | lr=6.55e-04 |  
+                    38.4s | RAM=0MB                                            
+Epoch 18/50 | train_loss=0.737146 val_loss=0.779776 | train_acc=0.4653 val_acc=0.2306 | val_f1=0.2140 | train[long=0.512 short=0.465 neutral=0.420] | val[long=0.479 short=0.578 neutral=0.001] | lr=6.55e-04 | 38.4s | RAM=0MB
+[19:24:38] INFO     Epoch 19/50 | train_loss=0.837506 val_loss=0.760001 |      
+                    train_acc=0.4601 val_acc=0.2431 | val_f1=0.2312 |          
+                    train[long=0.527 short=0.428 neutral=0.424] |              
+                    val[long=0.432 short=0.599 neutral=0.030] | lr=5.78e-04 |  
+                    28.6s | RAM=0MB                                            
+Epoch 19/50 | train_loss=0.837506 val_loss=0.760001 | train_acc=0.4601 val_acc=0.2431 | val_f1=0.2312 | train[long=0.527 short=0.428 neutral=0.424] | val[long=0.432 short=0.599 neutral=0.030] | lr=5.78e-04 | 28.6s | RAM=0MB
+[19:25:02] INFO     Epoch 20/50 | train_loss=0.763443 val_loss=0.810114 |      
+                    train_acc=0.4647 val_acc=0.2472 | val_f1=0.2327 |          
+                    train[long=0.473 short=0.451 neutral=0.470] |              
+                    val[long=0.414 short=0.635 neutral=0.028] | lr=5.00e-04 |  
+                    24.0s | RAM=0MB                                            
+Epoch 20/50 | train_loss=0.763443 val_loss=0.810114 | train_acc=0.4647 val_acc=0.2472 | val_f1=0.2327 | train[long=0.473 short=0.451 neutral=0.470] | val[long=0.414 short=0.635 neutral=0.028] | lr=5.00e-04 | 24.0s | RAM=0MB
+[19:25:26] INFO     Epoch 21/50 | train_loss=0.740219 val_loss=0.780717 |      
+                    train_acc=0.4688 val_acc=0.3305 | val_f1=0.3126 |          
+                    train[long=0.489 short=0.431 neutral=0.487] |              
+                    val[long=0.236 short=0.579 neutral=0.258] | lr=4.22e-04 |  
+                    23.8s | RAM=0MB                                            
+Epoch 21/50 | train_loss=0.740219 val_loss=0.780717 | train_acc=0.4688 val_acc=0.3305 | val_f1=0.3126 | train[long=0.489 short=0.431 neutral=0.487] | val[long=0.236 short=0.579 neutral=0.258] | lr=4.22e-04 | 23.8s | RAM=0MB
+           INFO       ✓ Best model saved (val_loss=0.780717, macro_f1=0.3126)  
+[19:25:50] INFO     Epoch 22/50 | train_loss=0.791919 val_loss=0.783035 |      
+                    train_acc=0.4638 val_acc=0.2816 | val_f1=0.2674 |          
+                    train[long=0.455 short=0.449 neutral=0.487] |              
+                    val[long=0.336 short=0.698 neutral=0.088] | lr=3.45e-04 |  
+                    23.5s | RAM=0MB                                            
+Epoch 22/50 | train_loss=0.791919 val_loss=0.783035 | train_acc=0.4638 val_acc=0.2816 | val_f1=0.2674 | train[long=0.455 short=0.449 neutral=0.487] | val[long=0.336 short=0.698 neutral=0.088] | lr=3.45e-04 | 23.5s | RAM=0MB
+[19:26:36] INFO     Epoch 23/50 | train_loss=0.832326 val_loss=0.775110 |      
+                    train_acc=0.4680 val_acc=0.2943 | val_f1=0.2872 |          
+                    train[long=0.470 short=0.459 neutral=0.474] |              
+                    val[long=0.293 short=0.562 neutral=0.182] | lr=2.73e-04 |  
+                    46.2s | RAM=0MB                                            
+Epoch 23/50 | train_loss=0.832326 val_loss=0.775110 | train_acc=0.4680 val_acc=0.2943 | val_f1=0.2872 | train[long=0.470 short=0.459 neutral=0.474] | val[long=0.293 short=0.562 neutral=0.182] | lr=2.73e-04 | 46.2s | RAM=0MB
+[19:27:21] INFO     Epoch 24/50 | train_loss=0.748271 val_loss=0.752913 |      
+                    train_acc=0.4744 val_acc=0.2683 | val_f1=0.2636 |          
+                    train[long=0.509 short=0.455 neutral=0.458] |              
+                    val[long=0.415 short=0.577 neutral=0.089] | lr=2.06e-04 |  
+                    45.1s | RAM=0MB                                            
+Epoch 24/50 | train_loss=0.748271 val_loss=0.752913 | train_acc=0.4744 val_acc=0.2683 | val_f1=0.2636 | train[long=0.509 short=0.455 neutral=0.458] | val[long=0.415 short=0.577 neutral=0.089] | lr=2.06e-04 | 45.1s | RAM=0MB
+[19:28:05] INFO     Epoch 25/50 | train_loss=0.720983 val_loss=0.756609 |      
+                    train_acc=0.4777 val_acc=0.2775 | val_f1=0.2748 |          
+                    train[long=0.494 short=0.483 neutral=0.457] |              
+                    val[long=0.386 short=0.560 neutral=0.123] | lr=1.46e-04 |  
+                    44.0s | RAM=0MB                                            
+Epoch 25/50 | train_loss=0.720983 val_loss=0.756609 | train_acc=0.4777 val_acc=0.2775 | val_f1=0.2748 | train[long=0.494 short=0.483 neutral=0.457] | val[long=0.386 short=0.560 neutral=0.123] | lr=1.46e-04 | 44.0s | RAM=0MB
+[19:28:50] INFO     Epoch 26/50 | train_loss=0.754742 val_loss=0.767724 |      
+                    train_acc=0.4793 val_acc=0.2821 | val_f1=0.2729 |          
+                    train[long=0.508 short=0.462 neutral=0.468] |              
+                    val[long=0.304 short=0.629 neutral=0.129] | lr=9.55e-05 |  
+                    45.2s | RAM=0MB                                            
+Epoch 26/50 | train_loss=0.754742 val_loss=0.767724 | train_acc=0.4793 val_acc=0.2821 | val_f1=0.2729 | train[long=0.508 short=0.462 neutral=0.468] | val[long=0.304 short=0.629 neutral=0.129] | lr=9.55e-05 | 45.2s | RAM=0MB
+[19:29:35] INFO     Epoch 27/50 | train_loss=0.706318 val_loss=0.745532 |      
+                    train_acc=0.4764 val_acc=0.2931 | val_f1=0.2886 |          
+                    train[long=0.514 short=0.479 neutral=0.436] |              
+                    val[long=0.337 short=0.564 neutral=0.164] | lr=5.45e-05 |  
+                    44.5s | RAM=0MB                                            
+Epoch 27/50 | train_loss=0.706318 val_loss=0.745532 | train_acc=0.4764 val_acc=0.2931 | val_f1=0.2886 | train[long=0.514 short=0.479 neutral=0.436] | val[long=0.337 short=0.564 neutral=0.164] | lr=5.45e-05 | 44.5s | RAM=0MB
+[19:30:19] INFO     Epoch 28/50 | train_loss=0.750901 val_loss=0.757305 |      
+                    train_acc=0.4804 val_acc=0.3005 | val_f1=0.2937 |          
+                    train[long=0.497 short=0.462 neutral=0.482] |              
+                    val[long=0.315 short=0.582 neutral=0.177] | lr=2.45e-05 |  
+                    44.4s | RAM=0MB                                            
+Epoch 28/50 | train_loss=0.750901 val_loss=0.757305 | train_acc=0.4804 val_acc=0.3005 | val_f1=0.2937 | train[long=0.497 short=0.462 neutral=0.482] | val[long=0.315 short=0.582 neutral=0.177] | lr=2.45e-05 | 44.4s | RAM=0MB
+[19:31:06] INFO     Epoch 29/50 | train_loss=0.714012 val_loss=0.754710 |      
+                    train_acc=0.4823 val_acc=0.2941 | val_f1=0.2887 |          
+                    train[long=0.496 short=0.468 neutral=0.483] |              
+                    val[long=0.332 short=0.579 neutral=0.161] | lr=6.16e-06 |  
+                    46.7s | RAM=0MB                                            
+Epoch 29/50 | train_loss=0.714012 val_loss=0.754710 | train_acc=0.4823 val_acc=0.2941 | val_f1=0.2887 | train[long=0.496 short=0.468 neutral=0.483] | val[long=0.332 short=0.579 neutral=0.161] | lr=6.16e-06 | 46.7s | RAM=0MB
+[19:31:51] INFO     Epoch 30/50 | train_loss=0.767144 val_loss=0.755398 |      
+                    train_acc=0.4820 val_acc=0.2966 | val_f1=0.2912 |          
+                    train[long=0.514 short=0.464 neutral=0.468] |              
+                    val[long=0.331 short=0.579 neutral=0.166] | lr=1.00e-03 |  
+                    45.0s | RAM=0MB                                            
+Epoch 30/50 | train_loss=0.767144 val_loss=0.755398 | train_acc=0.4820 val_acc=0.2966 | val_f1=0.2912 | train[long=0.514 short=0.464 neutral=0.468] | val[long=0.331 short=0.579 neutral=0.166] | lr=1.00e-03 | 45.0s | RAM=0MB
+[19:32:31] INFO     Epoch 31/50 | train_loss=0.785031 val_loss=0.766642 |      
+                    train_acc=0.4716 val_acc=0.2905 | val_f1=0.2787 |          
+                    train[long=0.499 short=0.454 neutral=0.460] |              
+                    val[long=0.337 short=0.687 neutral=0.108] | lr=9.98e-04 |  
+                    39.3s | RAM=0MB                                            
+Epoch 31/50 | train_loss=0.785031 val_loss=0.766642 | train_acc=0.4716 val_acc=0.2905 | val_f1=0.2787 | train[long=0.499 short=0.454 neutral=0.460] | val[long=0.337 short=0.687 neutral=0.108] | lr=9.98e-04 | 39.3s | RAM=0MB
+           INFO     Early stopping at epoch 31 (patience=10, best_epoch=21,    
+                    best_val_loss=0.780717, best_macro_f1=0.3126)              
+           INFO     Training complete: 31 epochs, best_val_loss=0.780717,      
+                    best_macro_f1=0.3126 at epoch 21                           
+           INFO     Training complete:                                         
+                    TrainingMetrics(train_losses=[1.061274523797788,           
+                    0.8959817439317703, 1.0339389772791612, 0.9394299850652092,
+                    0.7994682765320728, 0.9227506792859027, 0.9428232869035319,
+                    0.7883572421575847, 0.8271681399721849, 0.7809876579987375,
+                    0.8570001180234709, 0.8899991841692674, 0.9200877931557203,
+                    0.7922914483045277, 0.7977161125132912, 0.7409154443364394,
+                    0.8761428555375651, 0.7371460230726945, 0.8375057044782137,
+                    0.7634429633617401, 0.7402193412968987, 0.7919191725944218,
+                    0.8323258561523337, 0.7482706684815256, 0.7209828315596831,
+                    0.7547421847519121, 0.7063179745485908, 0.7509006120656666,
+                    0.714011768761434, 0.767143660470059, 0.785031162594494],  
+                    val_losses=[0.7458423873092542, 0.7530470962553578,        
+                    0.8062176122942467, 0.7978926828998795, 0.8336931178450706,
+                    0.8254819364722715, 0.8159897365093717, 0.823121181018005, 
+                    0.7958652180876814, 0.8143455192947971, 0.7839268868851734,
+                    0.8651942867751515, 0.791427287425956, 0.7324773047070012, 
+                    0.7724758811925407, 0.7818658332455292, 0.8769947558975608,
+                    0.77977581071562, 0.7600011933105072, 0.8101136232370266,  
+                    0.7807168737585513, 0.783035405610558, 0.7751097480456034, 
+                    0.7529133728398704, 0.756609222879225, 0.7677239586089365, 
+                    0.7455324274805829, 0.7573051416181279, 0.7547102877367041,
+                    0.755398167808, 0.7666419053660984],                       
+                    val_macro_f1=[0.20874891917236008, 0.2193651093886708,     
+                    0.21556819526060178, 0.2163666306761561,                   
+                    0.21118640241655504, 0.21030254774897217,                  
+                    0.22151745301977835, 0.21163920242901094,                  
+                    0.2289888655766543, 0.22745129839138123,                   
+                    0.3123792715720222, 0.1950127928500541,                    
+                    0.20913275277473994, 0.21629694754152273,                  
+                    0.20862429969574628, 0.21328951438757474,                  
+                    0.21036460934335807, 0.214041542956484, 0.2311924667901497,
+                    0.23265349856088482, 0.3125672231505014,                   
+                    0.26740652067371085, 0.2872297951240945,                   
+                    0.2636174863967979, 0.27484660645573983,                   
+                    0.2729179647397804, 0.28864208809576436,                   
+                    0.2936643722674448, 0.2887442296857938, 0.2912066006116633,
+                    0.2786581836412009],                                       
+                    train_direction_acc=[0.39021381735801697,                  
+                    0.4077405333518982, 0.42516446113586426,                   
+                    0.42346835136413574, 0.43570107221603394,                  
+                    0.43493008613586426, 0.44176602363586426,                  
+                    0.44156044721603394, 0.44423314929008484,                  
+                    0.4465460479259491, 0.4408922791481018,                    
+                    0.43791118264198303, 0.44659745693206787,                  
+                    0.4484991729259491, 0.4460834562778473,                    
+                    0.45004111528396606, 0.44952714443206787,                  
+                    0.46525493264198303, 0.46011513471603394,                  
+                    0.46474096179008484, 0.4688014090061188,                   
+                    0.46376439929008484, 0.4679790437221527,                   
+                    0.4744037687778473, 0.4777446687221527, 0.4792865812778473,
+                    0.4763568937778473, 0.4804173409938812,                    
+                    0.48226767778396606, 0.48201069235801697,                  
+                    0.47157689929008484],                                      
+                    val_direction_acc=[0.24541284143924713, 0.2347094863653183,
+                    0.23165138065814972, 0.23292557895183563,                  
+                    0.22859327495098114, 0.2293577939271927,                   
+                    0.23980632424354553, 0.22808358073234558,                  
+                    0.2418450564146042, 0.2403160035610199,                    
+                    0.38939857482910156, 0.23394495248794556,                  
+                    0.22884811460971832, 0.23292557895183563,                  
+                    0.2262996882200241, 0.22884811460971832, 0.241590216755867,
+                    0.2306320071220398, 0.2431192696094513, 0.2471967339515686,
+                    0.3305300772190094, 0.2816004157066345, 0.2943425178527832,
+                    0.2683486342430115, 0.2775229215621948, 0.2821100950241089,
+                    0.2930682897567749, 0.30045872926712036, 0.294087678194046,
+                    0.29663607478141785, 0.2905198633670807],                  
+                    train_class_acc=[{'long_acc': 0.5003817081451416,          
+                    'short_acc': 0.2743585705757141, 'neutral_acc':            
+                    0.3924320936203003}, {'long_acc': 0.6365726590156555,      
+                    'short_acc': 0.2505829334259033, 'neutral_acc':            
+                    0.3335897922515869}, {'long_acc': 0.5911300182342529,      
+                    'short_acc': 0.2816082835197449, 'neutral_acc':            
+                    0.39769408106803894}, {'long_acc': 0.5514104962348938,     
+                    'short_acc': 0.3381449580192566, 'neutral_acc':            
+                    0.3809818923473358}, {'long_acc': 0.568713903427124,       
+                    'short_acc': 0.36050838232040405, 'neutral_acc':           
+                    0.37503889203071594}, {'long_acc': 0.48897796869277954,    
+                    'short_acc': 0.41180020570755005, 'neutral_acc':           
+                    0.4038158357143402}, {'long_acc': 0.4758113920688629,      
+                    'short_acc': 0.44673067331314087, 'neutral_acc':           
+                    0.4016973078250885}, {'long_acc': 0.46826013922691345,     
+                    'short_acc': 0.44196563959121704, 'neutral_acc':           
+                    0.4141714870929718}, {'long_acc': 0.5027231574058533,      
+                    'short_acc': 0.40338125824928284, 'neutral_acc':           
+                    0.4245818555355072}, {'long_acc': 0.4824872612953186,      
+                    'short_acc': 0.4137178361415863, 'neutral_acc':            
+                    0.4431402385234833}, {'long_acc': 0.46248841285705566,     
+                    'short_acc': 0.4587636888027191, 'neutral_acc':            
+                    0.40147897601127625}, {'long_acc': 0.39035916328430176,    
+                    'short_acc': 0.46986135840415955, 'neutral_acc':           
+                    0.45179232954978943}, {'long_acc': 0.46413177251815796,    
+                    'short_acc': 0.4160822927951813, 'neutral_acc':            
+                    0.4591166079044342}, {'long_acc': 0.461550235748291,       
+                    'short_acc': 0.41874516010284424, 'neutral_acc':           
+                    0.4650154709815979}, {'long_acc': 0.4700152277946472,      
+                    'short_acc': 0.4376816153526306, 'neutral_acc':            
+                    0.42996692657470703}, {'long_acc': 0.5093788504600525,     
+                    'short_acc': 0.4264548718929291, 'neutral_acc':            
+                    0.4138953983783722}, {'long_acc': 0.4786636233329773,      
+                    'short_acc': 0.40508314967155457, 'neutral_acc':           
+                    0.4635985791683197}, {'long_acc': 0.5115516781806946,      
+                    'short_acc': 0.46475669741630554, 'neutral_acc':           
+                    0.41980475187301636}, {'long_acc': 0.5273556113243103,     
+                    'short_acc': 0.42771270871162415, 'neutral_acc':           
+                    0.42376330494880676}, {'long_acc': 0.4734247326850891,     
+                    'short_acc': 0.4509051740169525, 'neutral_acc':            
+                    0.46998605132102966}, {'long_acc': 0.48897114396095276,    
+                    'short_acc': 0.43098679184913635, 'neutral_acc':           
+                    0.4866243898868561}, {'long_acc': 0.45501405000686646,     
+                    'short_acc': 0.4492798149585724, 'neutral_acc':            
+                    0.48682597279548645}, {'long_acc': 0.4703495502471924,     
+                    'short_acc': 0.45930761098861694, 'neutral_acc':           
+                    0.47446611523628235}, {'long_acc': 0.508608877658844,      
+                    'short_acc': 0.45549407601356506, 'neutral_acc':           
+                    0.4584348499774933}, {'long_acc': 0.49352067708969116,     
+                    'short_acc': 0.48337438702583313, 'neutral_acc':           
+                    0.4567505717277527}, {'long_acc': 0.5080682635307312,      
+                    'short_acc': 0.46150314807891846, 'neutral_acc':           
+                    0.4682044982910156}, {'long_acc': 0.5139638781547546,      
+                    'short_acc': 0.47932738065719604, 'neutral_acc':           
+                    0.4358539879322052}, {'long_acc': 0.49744778871536255,     
+                    'short_acc': 0.4620860517024994, 'neutral_acc':            
+                    0.48169705271720886}, {'long_acc': 0.4960390031337738,     
+                    'short_acc': 0.4680139720439911, 'neutral_acc':            
+                    0.48280778527259827}, {'long_acc': 0.5143834352493286,     
+                    'short_acc': 0.4639963209629059, 'neutral_acc':            
+                    0.4680752754211426}, {'long_acc': 0.4994681775569916,      
+                    'short_acc': 0.45430150628089905, 'neutral_acc':           
+                    0.46024465560913086}], val_class_acc=[{'long_acc':         
+                    0.27710843086242676, 'short_acc': 0.8034006357192993,      
+                    'neutral_acc': 0.0}, {'long_acc': 0.4645247757434845,      
+                    'short_acc': 0.5887354016304016, 'neutral_acc':            
+                    0.00894454400986433}, {'long_acc': 0.4752342700958252,     
+                    'short_acc': 0.5791711211204529, 'neutral_acc':            
+                    0.004025044851005077}, {'long_acc': 0.49933066964149475,   
+                    'short_acc': 0.5749202966690063, 'neutral_acc': 0.0},      
+                    {'long_acc': 0.4645247757434845, 'short_acc':              
+                    0.5844845771789551, 'neutral_acc': 0.0}, {'long_acc':      
+                    0.4350736141204834, 'short_acc': 0.6110520958900452,       
+                    'neutral_acc': 0.0}, {'long_acc': 0.4016064405441284,      
+                    'short_acc': 0.6439957618713379, 'neutral_acc':            
+                    0.01565295085310936}, {'long_acc': 0.43239626288414,       
+                    'short_acc': 0.5919234752655029, 'neutral_acc':            
+                    0.006708407774567604}, {'long_acc': 0.48058903217315674,   
+                    'short_acc': 0.5781083703041077, 'neutral_acc':            
+                    0.020572450011968613}, {'long_acc': 0.4337349534034729,    
+                    'short_acc': 0.589798092842102, 'neutral_acc':             
+                    0.028622539713978767}, {'long_acc': 0.05220883712172508,   
+                    'short_acc': 0.6386822462081909, 'neutral_acc':            
+                    0.39713773131370544}, {'long_acc': 0.2315930426120758,     
+                    'short_acc': 0.7906482219696045, 'neutral_acc':            
+                    0.00044722718303091824}, {'long_acc': 0.4257028102874756,  
+                    'short_acc': 0.6163655519485474, 'neutral_acc': 0.0},      
+                    {'long_acc': 0.48995983600616455, 'short_acc':             
+                    0.5812965035438538, 'neutral_acc': 0.00044722718303091824},
+                    {'long_acc': 0.44712182879447937, 'short_acc':             
+                    0.5887354016304016, 'neutral_acc': 0.0}, {'long_acc':      
+                    0.5006693601608276, 'short_acc': 0.5568544268608093,       
+                    'neutral_acc': 0.0}, {'long_acc': 0.29718875885009766,     
+                    'short_acc': 0.7555791735649109, 'neutral_acc':            
+                    0.006708407774567604}, {'long_acc': 0.47925034165382385,   
+                    'short_acc': 0.5781083703041077, 'neutral_acc':            
+                    0.0013416815781965852}, {'long_acc': 0.43239626288414,     
+                    'short_acc': 0.5993623733520508, 'neutral_acc':            
+                    0.029964221641421318}, {'long_acc': 0.413654625415802,     
+                    'short_acc': 0.6354941725730896, 'neutral_acc':            
+                    0.028175313025712967}, {'long_acc': 0.23560909926891327,   
+                    'short_acc': 0.5791711211204529, 'neutral_acc':            
+                    0.25760287046432495}, {'long_acc': 0.33601072430610657,    
+                    'short_acc': 0.6981934309005737, 'neutral_acc':            
+                    0.0881037563085556}, {'long_acc': 0.293172687292099,       
+                    'short_acc': 0.5621678829193115, 'neutral_acc':            
+                    0.18202146887779236}, {'long_acc': 0.4149933159351349,     
+                    'short_acc': 0.5770456790924072, 'neutral_acc':            
+                    0.08944544196128845}, {'long_acc': 0.3855421543121338,     
+                    'short_acc': 0.5600425004959106, 'neutral_acc':            
+                    0.12254025042057037}, {'long_acc': 0.3038821816444397,     
+                    'short_acc': 0.6291179656982422, 'neutral_acc':            
+                    0.12880143523216248}, {'long_acc': 0.33734938502311707,    
+                    'short_acc': 0.5642933249473572, 'neutral_acc':            
+                    0.16413238644599915}, {'long_acc': 0.3145917057991028,     
+                    'short_acc': 0.5823591947555542, 'neutral_acc':            
+                    0.1771019697189331}, {'long_acc': 0.3319946527481079,      
+                    'short_acc': 0.5791711211204529, 'neutral_acc':            
+                    0.16144901514053345}, {'long_acc': 0.330655962228775,      
+                    'short_acc': 0.5791711211204529, 'neutral_acc':            
+                    0.1663685142993927}, {'long_acc': 0.33734938502311707,     
+                    'short_acc': 0.6865037083625793, 'neutral_acc':            
+                    0.10822898149490356}], best_val_loss=0.7807168737585513,   
+                    best_macro_f1=0.3125672231505014, best_epoch=21,           
+                    epochs_trained=31)                                         
+[19:32:32] INFO       Test class dist — long: 444 (17.0%)                      
+           INFO       Test class dist — short: 524 (20.0%)                     
+           INFO       Test class dist — neutral: 1648 (63.0%)                  
+           INFO     Test results: loss=0.799481, acc=0.2030, macro_f1=0.2038,  
+                    mag_mae=0.019197                                           
+           INFO     Test evaluation: {'test_loss': 0.799481116121333,          
+                    'test_accuracy': 0.20298165082931519, 'test_macro_f1':     
+                    0.2037680894482119, 'magnitude_mae': 0.019196925684809685, 
+                    'avg_confidence_correct': 0.6251922249794006,              
+                    'avg_confidence_incorrect': 0.6226929426193237, 'long_acc':
+                    0.6261261105537415, 'long_count': 444, 'short_acc':        
+                    0.290076345205307, 'short_count': 524, 'neutral_acc':      
+                    0.061286408454179764, 'neutral_count': 1648}               

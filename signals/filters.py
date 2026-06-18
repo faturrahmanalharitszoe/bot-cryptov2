@@ -25,28 +25,28 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FilterConfig:
-    """Configuration for signal filters."""
+    """Configuration for signal filters — tuned for scalping."""
 
     # Cooldown
-    cooldown_minutes: int = 30  # min time between signals per symbol
+    cooldown_minutes: int = 5  # 1 bar cooldown (5m) — high-frequency scalping
 
     # Trend alignment
-    trend_alignment_enabled: bool = True
-    trend_alignment_periods: int = 20  # SMA period for trend check
+    trend_alignment_enabled: bool = False  # disabled for scalping — too slow
+    trend_alignment_periods: int = 10  # shorter SMA if enabled
 
     # Volatility filter
-    volatility_filter_enabled: bool = True
+    volatility_filter_enabled: bool = False  # disabled for scalping — ATR unreliable on 5m
     atr_period: int = 14
-    volatility_threshold: float = 3.0  # skip if ATR > N × average ATR
+    volatility_threshold: float = 4.0  # higher threshold if enabled
 
     # Volume filter
-    volume_filter_enabled: bool = True
+    volume_filter_enabled: bool = False  # disabled — volume data may be incomplete
     volume_ma_period: int = 20
-    min_volume_ratio: float = 0.5  # skip if volume < 0.5 × average
+    min_volume_ratio: float = 0.3  # more lenient if enabled
 
-    # Signal strength
-    min_confidence: float = 0.70
-    min_magnitude: float = 0.005  # 0.5%
+    # Signal strength — lowered for scalping (small moves are the target)
+    min_confidence: float = 0.38
+    min_magnitude: float = 0.0003  # 0.03% — scalp targets are tiny
 
     # Direction agreement (if multiple timeframes agree)
     require_multi_tf_agreement: bool = False

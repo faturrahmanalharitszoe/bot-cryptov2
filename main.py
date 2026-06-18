@@ -27,7 +27,7 @@ from monitoring.logger import setup_logger
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Bot-CryptoV2 — Deep Learning Swing Trading Bot",
+        description="Bot-CryptoV2 — Deep Learning Scalping Bot",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -93,7 +93,8 @@ def run_backtest(config: Config, logger) -> None:
     bt_cfg = BacktestConfig.from_config_dict(config.backtest)
     pairs = config.trading.get("pairs", ["BTC/USDT"])
     timeframes = config.trading.get("timeframes", ["1h"])
-    primary_tf = timeframes[-1] if timeframes else "1h"  # use largest TF for backtest
+    # Prefer 5m for scalping (288 bars/day); fall back through 15m → 1h
+    primary_tf = "5m" if "5m" in timeframes else ("15m" if "15m" in timeframes else ("1h" if "1h" in timeframes else (timeframes[-1] if timeframes else "1h")))
     input_window = config.model.get("input_window", 90)
 
     store = ParquetStore(config.storage.get("data_dir", "data"))
@@ -186,13 +187,15 @@ def run_backtest(config: Config, logger) -> None:
             numeric = features_df[feat_cols].values.astype(np.float32)
             numeric = np.nan_to_num(numeric, nan=0.0, posinf=0.0, neginf=0.0)
 
-            # Generate labels from close prices
+            # Generate SCALPING labels — aligned with ensemble.py:
+            #   DIRECTION_LONG=0, DIRECTION_SHORT=1, DIRECTION_NEUTRAL=2
+            # 6 bars × 5m = 30 min forward horizon; 0.3% threshold for scalp moves
             if "close" in features_df.columns:
                 close = features_df["close"]
-                future_return = close.shift(-12) / close - 1
-                direction = pd.Series(1, index=close.index)
-                direction[future_return > 0.005] = 0
-                direction[future_return < -0.005] = 2
+                future_return = close.shift(-6) / close - 1
+                direction = pd.Series(2, index=close.index)      # Neutral default
+                direction[future_return > 0.003] = 0              # Long (>0.3% in 30min)
+                direction[future_return < -0.003] = 1             # Short (<-0.3% in 30min)
                 magnitude = future_return.abs().fillna(0)
                 confidence = pd.Series(0.5, index=close.index)
             else:
@@ -223,6 +226,8 @@ def run_backtest(config: Config, logger) -> None:
                 cnn_kernel_sizes=model_cfg.get("cnn", {}).get("kernel_sizes"),
                 lstm_hidden=model_cfg.get("lstm", {}).get("hidden_size", 128),
                 lstm_layers=model_cfg.get("lstm", {}).get("num_layers", 2),
+                lstm_bidirectional=model_cfg.get("lstm", {}).get("bidirectional", True),
+                lstm_attention=model_cfg.get("lstm", {}).get("attention", True),
                 transformer_d_model=model_cfg.get("transformer", {}).get("d_model", 128),
                 transformer_nhead=model_cfg.get("transformer", {}).get("nhead", 8),
                 transformer_layers=model_cfg.get("transformer", {}).get("num_layers", 4),
@@ -240,6 +245,7 @@ def run_backtest(config: Config, logger) -> None:
                 confidence_labels=conf_np,
                 val_split=trainer_config.validation_split,
                 test_split=trainer_config.test_split,
+                batch_size=trainer_config.batch_size,
             )
 
             trainer.fit(train_loader=train_loader, val_loader=val_loader, save_path=str(model_path))
@@ -251,7 +257,12 @@ def run_backtest(config: Config, logger) -> None:
     def model_predictor(features_df: pd.DataFrame, symbol: str):
         if not model_loaded:
             return None
-        return predictor.predict_from_dataframe(features_df, symbol)
+        pred = predictor.predict_from_dataframe(features_df, symbol)
+        # Override the learned confidence head with max direction probability.
+        # The confidence head requires many more training epochs to calibrate;
+        # max(direction_probs) is immediately meaningful (0.33 = random, 1.0 = certain).
+        pred.confidence = max(pred.direction_probs.values())
+        return pred
 
     # Run backtest
     engine = BacktestEngine(
@@ -408,8 +419,14 @@ def run_train(config: Config, logger) -> None:
     # Create TrainerConfig from config.yaml
     trainer_config = TrainerConfig.from_config_dict(model_cfg)
 
-    # Create Trainer with model and config
-    trainer = Trainer(model=ensemble_model, config=trainer_config)
+    # Compute class weights (inverse-frequency) to handle Long/Short/Neutral imbalance
+    class_weights = None
+    if trainer_config.use_class_weights:
+        class_weights = Trainer.compute_class_weights(all_direction)
+        logger.info("Class weights computed: %s", class_weights.tolist())
+
+    # Create Trainer with model, config, and optional class weights
+    trainer = Trainer(model=ensemble_model, config=trainer_config, class_weights=class_weights)
 
     # Prepare DataLoaders (static method — takes numpy arrays)
     train_loader, val_loader, test_loader = Trainer.prepare_datasets(
@@ -419,6 +436,8 @@ def run_train(config: Config, logger) -> None:
         confidence_labels=all_confidence,
         val_split=trainer_config.validation_split,
         test_split=trainer_config.test_split,
+        batch_size=trainer_config.batch_size,
+        use_weighted_sampler=trainer_config.use_weighted_sampler,
     )
 
     # Train  (use .pt extension — Windows Defender may block .pth writes)
@@ -444,6 +463,7 @@ def run_scrape(config: Config, logger) -> None:
     logger.info("MODE: DATA SCRAPING")
     logger.info("=" * 60)
 
+    from datetime import datetime, timedelta
     from storage.parquet_store import ParquetStore
     from storage.sqlite_store import SQLiteStore
     from scrapers.ohlcv_scraper import OHLCVScraper
@@ -456,16 +476,41 @@ def run_scrape(config: Config, logger) -> None:
     store = ParquetStore(config.storage.get("data_dir", "data"))
     db = SQLiteStore()  # uses default path: data/raw/sentiment/bot_data.db
 
-    # OHLCV scraping
-    ohlcv_scraper = OHLCVScraper()
+    # Expected bar counts (sanity check)
+    bars_per_day = {"1m": 1440, "3m": 480, "5m": 288, "15m": 96, "30m": 48,
+                    "1h": 24, "2h": 12, "4h": 6, "6h": 4, "8h": 3, "12h": 2, "1d": 1}
+
+    # OHLCV scraping — use mainnet public API (no key required)
+    # The since= parameter ensures a full history_days window is fetched
+    # on first run, even if the parquet file already has some data.
+    since_dt = datetime.utcnow() - timedelta(days=history_days)
+
+    ohlcv_scraper = OHLCVScraper(testnet=False)  # mainnet for historical data
     for symbol in pairs:
         for tf in timeframes:
-            logger.info("Scraping %s %s (history=%d days)...", symbol, tf, history_days)
+            expected_bars = bars_per_day.get(tf, 24) * history_days
+            logger.info(
+                "Scraping %s %s (history=%d days, ~%d bars expected)...",
+                symbol, tf, history_days, expected_bars,
+            )
             try:
-                df = ohlcv_scraper.scrape(symbol, tf, limit=1000)
+                # Pass since= so the scraper starts from history_days ago
+                # (OHLCVScraper.scrape already saves to parquet internally)
+                df = ohlcv_scraper.scrape(symbol, tf, since=since_dt, limit=None)
                 if df is not None and not df.empty:
-                    store.save_ohlcv(symbol, tf, df, append=True)
-                    logger.info("Saved %d bars for %s %s", len(df), symbol, tf)
+                    pct = 100.0 * len(df) / max(expected_bars, 1)
+                    logger.info(
+                        "  %s %s: %d bars fetched (%.0f%% of expected %d)",
+                        symbol, tf, len(df), pct, expected_bars,
+                    )
+                    if len(df) < expected_bars * 0.5:
+                        logger.warning(
+                            "  WARNING: Only %.0f%% of expected bars. "
+                            "Possible testnet/API issue or exchange outage.",
+                            pct,
+                        )
+                else:
+                    logger.warning("  No data returned for %s %s", symbol, tf)
             except Exception as e:
                 logger.error("Failed to scrape %s %s: %s", symbol, tf, e)
 
